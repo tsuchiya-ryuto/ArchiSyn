@@ -45,3 +45,16 @@ export function saveProject(path: string, project: ProjectFile): Promise<void> {
 export function loadProject(path: string): Promise<ProjectFile> {
   return invoke("load_project", { path });
 }
+
+export type GenerateReport = {
+  written: string[];
+  skipped: string[];
+  warnings: string[];
+};
+
+export function generateCode(
+  outDir: string,
+  project: ProjectFile,
+): Promise<GenerateReport> {
+  return invoke("generate_code", { outDir, project });
+}

@@ -1,7 +1,7 @@
 import { ask, message, open, save } from "@tauri-apps/plugin-dialog";
 import { useModelStore } from "../state/store";
 import { toProjectFile } from "./convert";
-import { loadProject, newProject, saveProject } from "./project";
+import { generateCode, loadProject, newProject, saveProject } from "./project";
 
 const FILE_FILTERS = [
   { name: "ArchiSyn プロジェクト", extensions: ["arcsyn"] },
@@ -58,6 +58,36 @@ export async function openProjectAction() {
     s.setFileStatus(`読み込みました: ${path}`);
   } catch (e) {
     await showError("読み込みに失敗しました", e);
+  }
+}
+
+export async function generateCodeAction() {
+  const s = useModelStore.getState();
+  if (s.nodes.length === 0) {
+    await message("ノードがありません。生成するものがありません。", {
+      title: "ArchiSyn",
+      kind: "warning",
+    });
+    return;
+  }
+  const outDir = await open({
+    directory: true,
+    title: "コード生成先のディレクトリを選択",
+  });
+  if (typeof outDir !== "string") return;
+  try {
+    const report = await generateCode(outDir, snapshot());
+    const lines = [
+      `生成完了: ${report.written.length} ファイルを書き込みました`,
+      report.skipped.length > 0
+        ? `保護によりスキップ: ${report.skipped.length} ファイル（既存の実装部）`
+        : null,
+      ...report.warnings.map((w) => `⚠ ${w}`),
+    ].filter((l): l is string => l !== null);
+    await message(lines.join("\n"), { title: "コード生成", kind: "info" });
+    s.setFileStatus(`コード生成: ${outDir}`);
+  } catch (e) {
+    await showError("コード生成に失敗しました", e);
   }
 }
 

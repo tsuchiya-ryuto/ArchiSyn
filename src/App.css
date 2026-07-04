@@ -71,6 +71,17 @@ body,
   gap: 6px;
 }
 
+.generate-button {
+  background: #4a7dff;
+  border-color: #4a7dff;
+  color: #fff;
+  font-weight: 600;
+}
+
+.generate-button:hover {
+  background: #3a6af0;
+}
+
 .menu-status {
   margin-left: auto;
   font-size: 12px;

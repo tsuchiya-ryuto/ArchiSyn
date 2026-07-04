@@ -1,4 +1,5 @@
 import {
+  generateCodeAction,
   newProjectAction,
   openProjectAction,
   saveProjectAction,
@@ -25,6 +26,12 @@ export function Menu() {
         <button onClick={() => void saveProjectAction()}>保存</button>
         <button onClick={() => void saveProjectAction(true)}>
           名前を付けて保存
+        </button>
+        <button
+          className="generate-button"
+          onClick={() => void generateCodeAction()}
+        >
+          コード生成
         </button>
       </div>
       <span className="menu-status" title={currentFilePath ?? undefined}>
