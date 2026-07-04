@@ -1,12 +1,12 @@
-# 自動生成ファイル — ArchiSyn が生成するインターフェース部です。
+# 自動生成ファイル — ArchiSyn が生成する {{ node.label }} のインターフェース部です。
 # コード生成のたびに上書きされるため、編集しないでください。
-# アルゴリズムは {{ pkg }}/ 配下の各ノードファイル（実装部）に書いてください。
+# アルゴリズムは同じディレクトリの {{ node.node_name }}.py（実装部）に書いてください。
 from rclpy.node import Node
 
 {% for imp in imports %}{{ imp }}
 {% endfor %}
 
-{% for node in nodes %}class {{ node.class_base }}(Node):
+class {{ node.class_base }}(Node):
     """{{ node.label }} のインターフェース部（自動生成）。
 
     Subscriber / Publisher / タイマ / パラメータの配線を担当します。
@@ -41,6 +41,3 @@ from rclpy.node import Node
     def on_update(self) -> None:
         """周期処理（{{ node.period_ms }} ms ごと。実装部でオーバーライドしてください）"""
         raise NotImplementedError
-
-
-{% endfor %}

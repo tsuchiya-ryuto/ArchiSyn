@@ -8,7 +8,8 @@ use crate::model::{Language, NodeDef, ParamDef, Project};
 
 use super::{GenContext, LanguageGenerator};
 
-/// rclpy 向け Python コード生成（Phase 1）
+/// rclpy 向け Python コード生成（Phase 1）。
+/// ノードごとに完結したディレクトリ（interfaces.py + 実装部）を生成する。
 pub struct PythonGenerator;
 
 impl LanguageGenerator for PythonGenerator {
@@ -23,18 +24,20 @@ impl LanguageGenerator for PythonGenerator {
     fn generate(&self, ctx: &GenContext, nodes: &[&NodeDef]) -> Result<Vec<GeneratedFile>, String> {
         let pkg = self.package_name(ctx.project);
         let root = PathBuf::from("src").join(&pkg);
-        let interfaces_file = format!("{pkg}_interfaces.py");
+        let module_root = root.join(&pkg);
         let mut files = Vec::new();
 
-        // 依存パッケージと import 文（ファイル全体で重複排除・整列）
+        // パッケージ全体の依存（package.xml 用）
         let mut dep_pkgs: BTreeSet<String> = BTreeSet::new();
-        let mut imports: BTreeSet<String> = BTreeSet::new();
-        let mut node_ctxs = Vec::new();
         let mut entry_points = Vec::new();
 
         for node in nodes {
             let node_name = &ctx.node_names[&node.id];
+            let node_dir = module_root.join(node_name);
             let class_base = format!("{}Base", pascal_case(&node.label));
+
+            // このノードが使う import（ノード単位で重複排除・整列）
+            let mut imports: BTreeSet<String> = BTreeSet::new();
             let mut inputs = Vec::new();
             let mut outputs = Vec::new();
 
@@ -86,67 +89,63 @@ impl LanguageGenerator for PythonGenerator {
                 })
                 .collect();
 
-            let mut m = Map::new();
-            m.insert("label".into(), Value::String(node.label.clone()));
-            m.insert("node_name".into(), Value::String(node_name.clone()));
-            m.insert("class_base".into(), Value::String(class_base.clone()));
-            m.insert("class_name".into(), Value::String(pascal_case(&node.label)));
-            m.insert(
+            let mut node_ctx = Map::new();
+            node_ctx.insert("label".into(), Value::String(node.label.clone()));
+            node_ctx.insert("node_name".into(), Value::String(node_name.clone()));
+            node_ctx.insert("class_base".into(), Value::String(class_base.clone()));
+            node_ctx.insert("class_name".into(), Value::String(pascal_case(&node.label)));
+            node_ctx.insert(
                 "period_s".into(),
                 Value::String(format_period_s(node.period_ms)),
             );
-            m.insert("period_ms".into(), Value::from(node.period_ms));
-            m.insert("inputs".into(), Value::Array(inputs));
-            m.insert("outputs".into(), Value::Array(outputs));
-            m.insert("params".into(), Value::Array(params));
-            node_ctxs.push(Value::Object(m));
+            node_ctx.insert("period_ms".into(), Value::from(node.period_ms));
+            node_ctx.insert("inputs".into(), Value::Array(inputs));
+            node_ctx.insert("outputs".into(), Value::Array(outputs));
+            node_ctx.insert("params".into(), Value::Array(params));
+            let node_ctx = Value::Object(node_ctx);
+
+            // インターフェース部（毎回再生成）
+            let mut tctx = Context::new();
+            tctx.insert("pkg", &pkg);
+            tctx.insert("imports", &imports.iter().collect::<Vec<_>>());
+            tctx.insert("node", &node_ctx);
+            files.push(GeneratedFile {
+                rel_path: node_dir.join("interfaces.py"),
+                content: templates()
+                    .render("python/interfaces.tera", &tctx)
+                    .map_err(|e| format!("interfaces の生成に失敗: {e}"))?,
+                protected: false,
+            });
+
+            // 実装部スケルトン（保護対象: 既存なら上書きしない）
+            let mut ictx = Context::new();
+            ictx.insert("pkg", &pkg);
+            ictx.insert(
+                "interfaces_module",
+                &format!("{pkg}.{node_name}.interfaces"),
+            );
+            ictx.insert("node", &node_ctx);
+            files.push(GeneratedFile {
+                rel_path: node_dir.join(format!("{node_name}.py")),
+                content: templates()
+                    .render("python/node_impl.tera", &ictx)
+                    .map_err(|e| format!("実装スケルトンの生成に失敗: {e}"))?,
+                protected: true,
+            });
+
+            files.push(GeneratedFile {
+                rel_path: node_dir.join("__init__.py"),
+                content: String::new(),
+                protected: false,
+            });
 
             let mut e = Map::new();
             e.insert("node_name".into(), Value::String(node_name.clone()));
             entry_points.push(Value::Object(e));
         }
 
-        // interfaces（毎回再生成）
-        let mut tctx = Context::new();
-        tctx.insert("pkg", &pkg);
-        tctx.insert("imports", &imports.iter().collect::<Vec<_>>());
-        tctx.insert("nodes", &node_ctxs);
         files.push(GeneratedFile {
-            rel_path: root.join("interfaces").join(&interfaces_file),
-            content: templates()
-                .render("python/interfaces.tera", &tctx)
-                .map_err(|e| format!("interfaces の生成に失敗: {e}"))?,
-            protected: false,
-        });
-        files.push(GeneratedFile {
-            rel_path: root.join("interfaces").join("__init__.py"),
-            content: String::new(),
-            protected: false,
-        });
-
-        // 実装部スケルトン（保護対象: 既存なら上書きしない）
-        for (node, node_ctx) in nodes.iter().zip(&node_ctxs) {
-            let node_name = &ctx.node_names[&node.id];
-            let mut ictx = Context::new();
-            ictx.insert("pkg", &pkg);
-            ictx.insert(
-                "interfaces_module",
-                &format!(
-                    "{pkg}.interfaces.{}",
-                    interfaces_file.trim_end_matches(".py")
-                ),
-            );
-            ictx.insert("node", node_ctx);
-            files.push(GeneratedFile {
-                rel_path: root.join(&pkg).join(format!("{node_name}.py")),
-                content: templates()
-                    .render("python/node_impl.tera", &ictx)
-                    .map_err(|e| format!("実装スケルトンの生成に失敗: {e}"))?,
-                protected: true,
-            });
-        }
-        files.push(GeneratedFile {
-            rel_path: root.join(&pkg).join("__init__.py"),
+            rel_path: module_root.join("__init__.py"),
             content: String::new(),
             protected: false,
         });

@@ -106,9 +106,11 @@ fn generates_expected_workspace_layout() {
         "src/demo_robot_py_nodes/setup.py",
         "src/demo_robot_py_nodes/setup.cfg",
         "src/demo_robot_py_nodes/resource/demo_robot_py_nodes",
-        "src/demo_robot_py_nodes/interfaces/demo_robot_py_nodes_interfaces.py",
-        "src/demo_robot_py_nodes/demo_robot_py_nodes/sensor_fusion.py",
-        "src/demo_robot_py_nodes/demo_robot_py_nodes/controller.py",
+        "src/demo_robot_py_nodes/demo_robot_py_nodes/sensor_fusion/__init__.py",
+        "src/demo_robot_py_nodes/demo_robot_py_nodes/sensor_fusion/interfaces.py",
+        "src/demo_robot_py_nodes/demo_robot_py_nodes/sensor_fusion/sensor_fusion.py",
+        "src/demo_robot_py_nodes/demo_robot_py_nodes/controller/interfaces.py",
+        "src/demo_robot_py_nodes/demo_robot_py_nodes/controller/controller.py",
         "launch/system.launch.py",
     ] {
         assert!(
@@ -122,22 +124,34 @@ fn generates_expected_workspace_layout() {
 #[test]
 fn interface_wires_topics_via_edges() {
     let ws = generate_workspace(&demo_project()).unwrap();
-    let interfaces = content_of(
+    let fusion = content_of(
         &ws.files,
-        "src/demo_robot_py_nodes/interfaces/demo_robot_py_nodes_interfaces.py",
+        "src/demo_robot_py_nodes/demo_robot_py_nodes/sensor_fusion/interfaces.py",
+    );
+    let controller = content_of(
+        &ws.files,
+        "src/demo_robot_py_nodes/demo_robot_py_nodes/controller/interfaces.py",
     );
 
     // 出力: 自ノード名/ポート名 のトピックへ publish
-    assert!(interfaces.contains(
+    assert!(fusion.contains(
         "create_publisher(\n            FusedPose, \"sensor_fusion/fused\", 10\n        )"
     ));
     // 入力: エッジで接続された接続元のトピックを subscribe
-    assert!(interfaces.contains("FusedPose, \"sensor_fusion/fused\", self._handle_pose, 10"));
+    assert!(controller.contains("FusedPose, \"sensor_fusion/fused\", self._handle_pose, 10"));
     // 未接続入力はフォールバックトピック
-    assert!(interfaces.contains("Imu, \"sensor_fusion/imu\", self._handle_imu, 10"));
+    assert!(fusion.contains("Imu, \"sensor_fusion/imu\", self._handle_imu, 10"));
     // パラメータと周期
-    assert!(interfaces.contains("declare_parameter(\"alpha\", 0.7)"));
-    assert!(interfaces.contains("create_timer(0.05, self.on_update)"));
+    assert!(fusion.contains("declare_parameter(\"alpha\", 0.7)"));
+    assert!(fusion.contains("create_timer(0.05, self.on_update)"));
+    // 実装部はノードディレクトリ内の interfaces を import する
+    let impl_file = content_of(
+        &ws.files,
+        "src/demo_robot_py_nodes/demo_robot_py_nodes/controller/controller.py",
+    );
+    assert!(
+        impl_file.contains("from demo_robot_py_nodes.controller.interfaces import ControllerBase")
+    );
 }
 
 #[test]
@@ -163,7 +177,8 @@ fn implementation_files_are_protected_on_regeneration() {
     assert!(first.skipped.is_empty());
 
     // 実装部にユーザーの変更を加える
-    let impl_path = root.join("src/demo_robot_py_nodes/demo_robot_py_nodes/controller.py");
+    let impl_path =
+        root.join("src/demo_robot_py_nodes/demo_robot_py_nodes/controller/controller.py");
     std::fs::write(&impl_path, "# user implementation\n").unwrap();
 
     // 再生成しても実装部は上書きされない
@@ -177,5 +192,5 @@ fn implementation_files_are_protected_on_regeneration() {
     assert!(second
         .written
         .iter()
-        .any(|p| p.ends_with("demo_robot_py_nodes_interfaces.py")));
+        .any(|p| p.ends_with("controller/interfaces.py")));
 }
