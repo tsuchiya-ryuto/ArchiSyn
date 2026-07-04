@@ -25,3 +25,4 @@ dist-ssr
 
 # Claude Code local session data
 .claude/
+src-tauri/my_project.arcsyn
