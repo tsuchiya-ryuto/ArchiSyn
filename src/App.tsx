@@ -1,59 +1,37 @@
-import { useCallback } from "react";
-import {
-  ReactFlow,
-  Background,
-  Controls,
-  MiniMap,
-  addEdge,
-  useNodesState,
-  useEdgesState,
-  type Connection,
-  type Edge,
-  type Node,
-} from "@xyflow/react";
+import { useState } from "react";
 import "@xyflow/react/dist/style.css";
 import "./App.css";
+import { Canvas } from "./components/Canvas/Canvas";
+import { NodeInspector } from "./components/NodeInspector/NodeInspector";
+import { TypeEditor } from "./components/TypeEditor/TypeEditor";
 
-const initialNodes: Node[] = [
-  {
-    id: "n_sensor_fusion",
-    position: { x: 100, y: 150 },
-    data: { label: "SensorFusion" },
-  },
-  {
-    id: "n_controller",
-    position: { x: 400, y: 150 },
-    data: { label: "Controller" },
-  },
-];
-
-const initialEdges: Edge[] = [
-  { id: "e1", source: "n_sensor_fusion", target: "n_controller" },
-];
+type SidebarTab = "node" | "types";
 
 function App() {
-  const [nodes, , onNodesChange] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
-
-  const onConnect = useCallback(
-    (connection: Connection) => setEdges((eds) => addEdge(connection, eds)),
-    [setEdges],
-  );
+  const [tab, setTab] = useState<SidebarTab>("node");
 
   return (
-    <div className="canvas-container">
-      <ReactFlow
-        nodes={nodes}
-        edges={edges}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
-        onConnect={onConnect}
-        fitView
-      >
-        <Background />
-        <Controls />
-        <MiniMap />
-      </ReactFlow>
+    <div className="app">
+      <Canvas />
+      <aside className="sidebar">
+        <div className="sidebar-tabs">
+          <button
+            className={tab === "node" ? "active" : ""}
+            onClick={() => setTab("node")}
+          >
+            ノード
+          </button>
+          <button
+            className={tab === "types" ? "active" : ""}
+            onClick={() => setTab("types")}
+          >
+            型
+          </button>
+        </div>
+        <div className="sidebar-body">
+          {tab === "node" ? <NodeInspector /> : <TypeEditor />}
+        </div>
+      </aside>
     </div>
   );
 }
