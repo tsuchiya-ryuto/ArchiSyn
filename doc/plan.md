@@ -177,7 +177,9 @@ viewport: # GUI 完全復元
 - [x] Rust 側に `Project` 構造体 + `serde_yaml`
 - [x] Tauri command: `save_project`, `load_project`, `new_project`
 - [x] フロントとの状態同期（Zustand）
-- [ ] **検証**: 保存→終了→起動→読込で完全復元できる ← GUI 手動確認待ち（Rust 側 roundtrip は単体テスト済）
+- [x] **検証**: 保存→終了→起動→読込で完全復元できる（2026-07-04 GUI 手動確認済）
+
+**1.2 完了（2026-07-04）**
 
 #### 1.3 Python + ROS 2 コード生成
 
@@ -260,3 +262,4 @@ _更新履歴_
 - 2026-07-04: Phase 0 完了を反映（雛形生成 / React Flow / lint・format / CI / dev 起動確認）
 - 2026-07-04: Phase 1.1 完了を反映（モデリング基盤: ノード編集 UI・ポート・インスペクタ・型エディタ・型互換チェック）
 - 2026-07-04: Phase 1.2 実装を反映（Rust モデル + save/load/new コマンド + フロント同期・メニュー。GUI 復元の手動検証待ち）
+- 2026-07-04: Phase 1.2 完了（保存→終了→起動→読込の GUI 完全復元を手動確認）
