@@ -8,6 +8,7 @@ import {
   type EdgeChange,
   type Node,
   type NodeChange,
+  type ReactFlowInstance,
 } from "@xyflow/react";
 import {
   isTypeCompatible,
@@ -15,6 +16,8 @@ import {
   type CustomType,
   type PortDef,
 } from "../types/arcsyn";
+import type { ProjectFile } from "../ipc/project";
+import { fromProjectFile } from "../ipc/convert";
 
 export type ArchNode = Node<ArchNodeData, "archNode">;
 
@@ -26,6 +29,18 @@ type ModelState = {
   customTypes: CustomType[];
   nextId: number;
   connectionError: string | null;
+
+  projectName: string;
+  middleware: string;
+  currentFilePath: string | null;
+  fileStatus: string | null;
+  rfInstance: ReactFlowInstance<ArchNode, Edge> | null;
+
+  setProjectName: (name: string) => void;
+  setCurrentFilePath: (path: string | null) => void;
+  setFileStatus: (status: string | null) => void;
+  setRfInstance: (instance: ReactFlowInstance<ArchNode, Edge>) => void;
+  applyProjectFile: (file: ProjectFile, path: string | null) => void;
 
   onNodesChange: (changes: NodeChange<ArchNode>[]) => void;
   onEdgesChange: (changes: EdgeChange[]) => void;
@@ -117,12 +132,56 @@ function patchNodeData(
   );
 }
 
+// 読込済みノード id（n1, n2, ...）と衝突しない連番の初期値を求める
+function nextIdAfter(nodes: ArchNode[]): number {
+  let max = 0;
+  for (const n of nodes) {
+    const m = /^n(\d+)$/.exec(n.id);
+    if (m) max = Math.max(max, Number(m[1]));
+  }
+  return max + 1;
+}
+
 export const useModelStore = create<ModelState>()((set, get) => ({
   nodes: [],
   edges: [],
   customTypes: [],
   nextId: 1,
   connectionError: null,
+
+  projectName: "my_project",
+  middleware: "ros2_humble",
+  currentFilePath: null,
+  fileStatus: null,
+  rfInstance: null,
+
+  setProjectName: (name) => {
+    const trimmed = name.trim();
+    if (trimmed !== "") set({ projectName: trimmed });
+  },
+  setCurrentFilePath: (path) => set({ currentFilePath: path }),
+  setFileStatus: (status) => set({ fileStatus: status }),
+  setRfInstance: (instance) => set({ rfInstance: instance }),
+
+  applyProjectFile: (file, path) => {
+    const { nodes, edges, customTypes } = fromProjectFile(file);
+    set({
+      nodes,
+      edges,
+      customTypes,
+      nextId: nextIdAfter(nodes),
+      projectName: file.project.name,
+      middleware: file.project.middleware,
+      currentFilePath: path,
+      connectionError: null,
+    });
+    // ビューポート（ズーム・パン）も復元して GUI 完全復元とする
+    get().rfInstance?.setViewport({
+      x: file.viewport.pan.x,
+      y: file.viewport.pan.y,
+      zoom: file.viewport.zoom,
+    });
+  },
 
   onNodesChange: (changes) =>
     set((s) => ({ nodes: applyNodeChanges(changes, s.nodes) })),

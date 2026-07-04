@@ -21,6 +21,7 @@ export function Canvas() {
   const addNode = useModelStore((s) => s.addNode);
   const connectionError = useModelStore((s) => s.connectionError);
   const clearConnectionError = useModelStore((s) => s.clearConnectionError);
+  const setRfInstance = useModelStore((s) => s.setRfInstance);
 
   return (
     <div className="canvas-container">
@@ -32,8 +33,8 @@ export function Canvas() {
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         isValidConnection={isValidConnection}
+        onInit={setRfInstance}
         deleteKeyCode={["Delete", "Backspace"]}
-        fitView
       >
         <Background />
         <Controls />
