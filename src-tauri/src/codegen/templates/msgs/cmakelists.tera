@@ -1,0 +1,13 @@
+cmake_minimum_required(VERSION 3.8)
+project({{ pkg }})
+
+find_package(ament_cmake REQUIRED)
+find_package(rosidl_default_generators REQUIRED)
+{% for d in deps %}find_package({{ d }} REQUIRED)
+{% endfor %}
+rosidl_generate_interfaces(${PROJECT_NAME}
+{% for m in msg_files %}  "msg/{{ m }}"
+{% endfor %}{% if deps %}  DEPENDENCIES{% for d in deps %} {{ d }}{% endfor %}
+{% endif %})
+
+ament_package()

@@ -1,0 +1,35 @@
+"""{{ node.label }} の実装部。
+
+このファイルは初回のみ生成され、以後 ArchiSyn は上書きしません（実装ファイル保護）。
+アルゴリズムを自由に実装してください。
+"""
+
+import rclpy
+
+from {{ interfaces_module }} import {{ node.class_base }}
+
+
+class {{ node.class_name }}({{ node.class_base }}):
+    def on_update(self) -> None:
+        # TODO: 周期処理（{{ node.period_ms }} ms ごとに呼ばれます）を実装してください
+        #   入力: {% for i in node.inputs %}self.{{ i.name }}{% if not loop.last %}, {% endif %}{% else %}なし{% endfor %}
+
+        #   出力: {% for o in node.outputs %}self.publish_{{ o.name }}(msg){% if not loop.last %}, {% endif %}{% else %}なし{% endfor %}
+
+        pass
+
+
+def main(args=None) -> None:
+    rclpy.init(args=args)
+    node = {{ node.class_name }}()
+    try:
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,17 @@
+# 自動生成ファイル — ArchiSyn が生成する launch ファイルです。
+# コード生成のたびに上書きされるため、編集しないでください。
+from launch import LaunchDescription
+from launch_ros.actions import Node
+
+
+def generate_launch_description() -> LaunchDescription:
+    return LaunchDescription(
+        [
+{% for n in nodes %}            Node(
+                package="{{ n.pkg }}",
+                executable="{{ n.node_name }}",
+                name="{{ n.node_name }}",
+                output="screen",
+            ),
+{% endfor %}        ]
+    )

@@ -1,4 +1,14 @@
+use serde::Serialize;
+
 use crate::model::{Project, ARCSYN_VERSION};
+
+/// コード生成の結果レポート（フロントで表示する）
+#[derive(Debug, Serialize)]
+pub struct GenerateReport {
+    pub written: Vec<String>,
+    pub skipped: Vec<String>,
+    pub warnings: Vec<String>,
+}
 
 #[tauri::command]
 pub fn new_project() -> Project {
@@ -25,6 +35,18 @@ pub fn load_project(path: String) -> Result<Project, String> {
         ));
     }
     Ok(project)
+}
+
+#[tauri::command]
+pub fn generate_code(out_dir: String, project: Project) -> Result<GenerateReport, String> {
+    let workspace = crate::codegen::generate_workspace(&project)?;
+    let report =
+        crate::fs::safe_write::write_files(std::path::Path::new(&out_dir), &workspace.files)?;
+    Ok(GenerateReport {
+        written: report.written,
+        skipped: report.skipped,
+        warnings: workspace.warnings,
+    })
 }
 
 #[cfg(test)]

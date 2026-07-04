@@ -1,0 +1,46 @@
+# 自動生成ファイル — ArchiSyn が生成するインターフェース部です。
+# コード生成のたびに上書きされるため、編集しないでください。
+# アルゴリズムは {{ pkg }}/ 配下の各ノードファイル（実装部）に書いてください。
+from rclpy.node import Node
+
+{% for imp in imports %}{{ imp }}
+{% endfor %}
+
+{% for node in nodes %}class {{ node.class_base }}(Node):
+    """{{ node.label }} のインターフェース部（自動生成）。
+
+    Subscriber / Publisher / タイマ / パラメータの配線を担当します。
+    """
+
+    def __init__(self) -> None:
+        super().__init__("{{ node.node_name }}")
+{% for p in node.params %}        self.declare_parameter("{{ p.name }}", {{ p.py_default }})
+{% endfor %}{% for i in node.inputs %}        self.{{ i.name }}: {{ i.msg_class }} | None = None
+        self._{{ i.name }}_sub = self.create_subscription(
+            {{ i.msg_class }}, "{{ i.topic }}", self._handle_{{ i.name }}, 10
+        )
+{% endfor %}{% for o in node.outputs %}        self._{{ o.name }}_pub = self.create_publisher(
+            {{ o.msg_class }}, "{{ o.topic }}", 10
+        )
+{% endfor %}        self._timer = self.create_timer({{ node.period_s }}, self.on_update)
+{% for p in node.params %}
+    @property
+    def {{ p.name }}(self) -> {{ p.py_type }}:
+        return self.get_parameter("{{ p.name }}").value
+{% endfor %}{% for i in node.inputs %}
+    def _handle_{{ i.name }}(self, msg: {{ i.msg_class }}) -> None:
+        self.{{ i.name }} = msg
+        self.on_{{ i.name }}(msg)
+
+    def on_{{ i.name }}(self, msg: {{ i.msg_class }}) -> None:
+        """{{ i.name }} 受信時フック（必要なら実装部でオーバーライド）"""
+{% endfor %}{% for o in node.outputs %}
+    def publish_{{ o.name }}(self, msg: {{ o.msg_class }}) -> None:
+        self._{{ o.name }}_pub.publish(msg)
+{% endfor %}
+    def on_update(self) -> None:
+        """周期処理（{{ node.period_ms }} ms ごと。実装部でオーバーライドしてください）"""
+        raise NotImplementedError
+
+
+{% endfor %}
