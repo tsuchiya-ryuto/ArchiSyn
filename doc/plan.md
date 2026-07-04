@@ -186,17 +186,22 @@ viewport: # GUI 完全復元
 要求仕様の「出力イメージ」に従い、言語別パッケージ構成（`<project>_py_nodes` / `<project>_msgs`）で生成する。
 F-5（実行処理部とインターフェース部の分離）は「インターフェース部＝毎回再生成、実装部スケルトン＝既存時は保護（※1）」で実現する。
 
-- [ ] `LanguageGenerator` / `MiddlewareAdapter` trait 定義
-- [ ] `PythonGenerator` + `Ros2HumbleAdapter` 実装
-- [ ] Tera テンプレート（`<project>_py_nodes` パッケージ）:
+- [x] `LanguageGenerator` / `MiddlewareAdapter` trait 定義
+- [x] `PythonGenerator` + `Ros2HumbleAdapter` 実装
+- [x] Tera テンプレート（`<project>_py_nodes` パッケージ）:
   - `package.xml`, `setup.py`
   - `interfaces/<project>_py_nodes_interfaces.py`（インターフェース部。毎回再生成）
   - `<project>_py_nodes/<node>.py`（実装部スケルトン。rclpy Node, subscribe/publish, timer）
-- [ ] カスタム型 → `<project>_msgs/msg/*.msg` 生成（共通パッケージ）
-- [ ] `launch/system.launch.py` 生成
-- [ ] **実装ファイル保護（※1）**: 実装部の既存ファイルは上書きしない（F-5）
-- [ ] **検証**: 生成 → `colcon build` 成功 → ノード起動確認
+- [x] カスタム型 → `<project>_msgs/msg/*.msg` 生成（共通パッケージ）
+- [x] `launch/system.launch.py` 生成
+- [x] **実装ファイル保護（※1）**: 実装部の既存ファイルは上書きしない（F-5）
+- [x] **検証**: 生成 → `colcon build` 成功 → ノード起動確認
   - 開発機は Ubuntu 24.04 のため ROS 2 Humble はネイティブ非対応。検証は `osrf/ros:humble-desktop-full` コンテナ内で実施（`doc/setup.md` B.1 参照）
+  - 2026-07-04 検証済: colcon build 成功 / launch で 2 ノード起動 / エッジ由来の
+    トピック配線（Publisher・Subscription 各1）/ パラメータ反映 / 実装部への
+    ユーザーコード記入 → 再生成で保護 → カスタム型 FusedPose の Pub/Sub 疎通まで確認
+
+**1.3 完了（2026-07-04）**
 
 #### 1.4 ドキュメント・サンプル
 
@@ -263,3 +268,4 @@ _更新履歴_
 - 2026-07-04: Phase 1.1 完了を反映（モデリング基盤: ノード編集 UI・ポート・インスペクタ・型エディタ・型互換チェック）
 - 2026-07-04: Phase 1.2 実装を反映（Rust モデル + save/load/new コマンド + フロント同期・メニュー。GUI 復元の手動検証待ち）
 - 2026-07-04: Phase 1.2 完了（保存→終了→起動→読込の GUI 完全復元を手動確認）
+- 2026-07-04: Phase 1.3 完了（コード生成エンジン + GUI 統合。Docker で colcon build・ノード起動・Pub/Sub 疎通・実装保護を検証）
