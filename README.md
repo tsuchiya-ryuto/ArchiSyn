@@ -5,10 +5,11 @@
 ---
 
 ## 💡 Origin of the Name
+
 **ArchiSyn** という名前は、以下の2つの言葉を組み合わせて誕生しました。
 
-* **Architecture**: ソフトウェアの構造、設計の根幹。
-* **Synthesis (Synthesis / Synchronize)**: 抽象的な設計を具体的なコードへ「合成」し、設計と実装を「同期」させる。
+- **Architecture**: ソフトウェアの構造、設計の根幹。
+- **Synthesis (Synthesis / Synchronize)**: 抽象的な設計を具体的なコードへ「合成」し、設計と実装を「同期」させる。
 
 「設計図を描くだけで、実装の土台が魔法のように組み上がる」という体験を象徴しています。
 
@@ -16,10 +17,10 @@
 
 ## 🚀 Key Features
 
-* **Visual Modeling Interface**: SimulinkライクなUIで、コンポーネント、ポート、信号の流れを直感的に定義。
-* **Middleware Integration**: 特定のミドルウェア（ROS 2, AUTOSAR, 各種通信スタック等）のインターフェース定義をインポートし、ノード間の接続を自動構成。
-* **Skeleton Code Generation**: アーキテクチャ構成に基づき、ビルド可能なディレクトリ構造と、ボイラープレート（定型コード）を即座に出力。
-* **Abstraction Layer**: ロジックの実装と、ミドルウェア固有の複雑な処理（Pub/Subの初期化など）を分離し、開発者が本来のアルゴリズムに集中できる環境を提供。
+- **Visual Modeling Interface**: SimulinkライクなUIで、コンポーネント、ポート、信号の流れを直感的に定義。
+- **Middleware Integration**: 特定のミドルウェア（ROS 2, AUTOSAR, 各種通信スタック等）のインターフェース定義をインポートし、ノード間の接続を自動構成。
+- **Skeleton Code Generation**: アーキテクチャ構成に基づき、ビルド可能なディレクトリ構造と、ボイラープレート（定型コード）を即座に出力。
+- **Abstraction Layer**: ロジックの実装と、ミドルウェア固有の複雑な処理（Pub/Subの初期化など）を分離し、開発者が本来のアルゴリズムに集中できる環境を提供。
 
 ---
 
