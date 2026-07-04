@@ -55,8 +55,9 @@
 ```
 ArchiSyn/
 ├── doc/
-│   └── required_spec.md
-├── plan.md                       ← 本ファイル
+│   ├── plan.md                   ← 本ファイル
+│   ├── required_spec.md
+│   └── setup.md                  ← 開発環境セットアップ手順
 ├── README.md
 ├── src-tauri/                    ← Tauri Rust バックエンド
 │   ├── Cargo.toml
@@ -147,6 +148,8 @@ viewport:                        # GUI 完全復元
 
 ### Phase 0: プロジェクト初期化（1〜2日）
 
+> **前提**: `doc/setup.md` のチェックリスト（E）を完了していること。特に A.6 の hello-tauri 起動確認まで済ませてから着手する。
+
 - [ ] `cargo create-tauri-app` で Tauri + React + TypeScript 雛形生成
 - [ ] React Flow 導入・最小ノード表示確認
 - [ ] CI（GitHub Actions: build & test）
@@ -171,16 +174,21 @@ viewport:                        # GUI 完全復元
 - [ ] **検証**: 保存→終了→起動→読込で完全復元できる
 
 #### 1.3 Python + ROS 2 コード生成
+
+要求仕様の「出力イメージ」に従い、言語別パッケージ構成（`<project>_py_nodes` / `<project>_msgs`）で生成する。
+F-5（実行処理部とインターフェース部の分離）は「インターフェース部＝毎回再生成、実装部スケルトン＝既存時は保護（※1）」で実現する。
+
 - [ ] `LanguageGenerator` / `MiddlewareAdapter` trait 定義
 - [ ] `PythonGenerator` + `Ros2HumbleAdapter` 実装
-- [ ] Tera テンプレート:
+- [ ] Tera テンプレート（`<project>_py_nodes` パッケージ）:
   - `package.xml`, `setup.py`
-  - `<node>.py`（rclpy Node, subscribe/publish, timer）
-  - `interfaces.py`（型のヒント）
-- [ ] カスタム型 → `my_robot_msgs/msg/*.msg` 生成
+  - `interfaces/<project>_py_nodes_interfaces.py`（インターフェース部。毎回再生成）
+  - `<project>_py_nodes/<node>.py`（実装部スケルトン。rclpy Node, subscribe/publish, timer）
+- [ ] カスタム型 → `<project>_msgs/msg/*.msg` 生成（共通パッケージ）
 - [ ] `launch/system.launch.py` 生成
-- [ ] **実装ファイル保護（※1）**: 既存ファイルは上書きしない
+- [ ] **実装ファイル保護（※1）**: 実装部の既存ファイルは上書きしない（F-5）
 - [ ] **検証**: 生成 → `colcon build` 成功 → ノード起動確認
+  - 開発機は Ubuntu 24.04 のため ROS 2 Humble はネイティブ非対応。検証は `osrf/ros:humble-desktop-full` コンテナ内で実施（`doc/setup.md` B.1 参照）
 
 #### 1.4 ドキュメント・サンプル
 - [ ] サンプル `.arcsyn`（2〜3ノード）
@@ -196,7 +204,7 @@ viewport:                        # GUI 完全復元
 - [ ] `RustGenerator` + テンプレート（`r2r` または `ros2_rust`）
 - [ ] ノード単位の言語切替 UI（F-6）
 - [ ] 異言語ノード間の型整合（`my_robot_msgs` 共通パッケージで担保）
-- [ ] **検証**: C++/Python 混在ワークスペースで Pub/Sub 動作
+- [ ] **検証**: C++/Python 混在ワークスペースで Pub/Sub 動作（Phase 1 と同様に Docker コンテナ内で実施。`doc/setup.md` B.1 参照）
 
 ---
 
@@ -239,3 +247,4 @@ viewport:                        # GUI 完全復元
 
 *更新履歴*
 - 2026-05-20: 初版作成（要求仕様 doc/required_spec.md ベース）
+- 2026-07-04: ドキュメント間整合の修正（ディレクトリ構造の実態合わせ、Phase 0 に setup.md 前提を追記、Phase 1.3 を要求仕様の出力イメージに整合、検証の Docker 前提を明記）
