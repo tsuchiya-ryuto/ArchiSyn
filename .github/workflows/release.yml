@@ -1,0 +1,72 @@
+name: Release
+
+# v で始まるタグ（例: v0.1.0）の push で各 OS のインストーラをビルドし、
+# GitHub Releases にドラフトとして添付する。
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: ubuntu-22.04 # .deb / .rpm / .AppImage
+            args: ""
+          - platform: macos-latest # Apple Silicon (.dmg / .app)
+            args: "--target aarch64-apple-darwin"
+          - platform: macos-latest # Intel (.dmg / .app)
+            args: "--target x86_64-apple-darwin"
+          - platform: windows-latest # .msi / .exe (NSIS)
+            args: ""
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Tauri system dependencies (Linux)
+        if: startsWith(matrix.platform, 'ubuntu')
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            build-essential \
+            curl \
+            wget \
+            file \
+            libxdo-dev \
+            libssl-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            pkg-config
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build and upload release assets
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: "ArchiSyn ${{ github.ref_name }}"
+          releaseBody: "変更内容は doc/plan.md の更新履歴を参照してください。"
+          releaseDraft: true
+          prerelease: false
+          args: ${{ matrix.args }}
