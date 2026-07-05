@@ -1,17 +1,28 @@
+import { useEffect, useState } from "react";
 import {
   generateCodeAction,
   newProjectAction,
   openProjectAction,
   saveProjectAction,
 } from "../../ipc/fileActions";
+import { listMiddlewares, type MiddlewareInfo } from "../../ipc/project";
 import { useModelStore } from "../../state/store";
 import { TextField } from "../common/TextField";
 
 export function Menu() {
   const projectName = useModelStore((s) => s.projectName);
   const setProjectName = useModelStore((s) => s.setProjectName);
+  const middleware = useModelStore((s) => s.middleware);
+  const setMiddleware = useModelStore((s) => s.setMiddleware);
   const currentFilePath = useModelStore((s) => s.currentFilePath);
   const fileStatus = useModelStore((s) => s.fileStatus);
+  const [middlewares, setMiddlewares] = useState<MiddlewareInfo[]>([]);
+
+  useEffect(() => {
+    listMiddlewares().then(setMiddlewares).catch(console.error);
+  }, []);
+
+  const selectedInfo = middlewares.find((m) => m.name === middleware);
 
   return (
     <header className="menu-bar">
@@ -19,6 +30,22 @@ export function Menu() {
       <label className="menu-project-name">
         <span>プロジェクト名</span>
         <TextField value={projectName} onCommit={setProjectName} />
+      </label>
+      <label className="menu-middleware" title={selectedInfo?.description}>
+        <span>ミドルウェア</span>
+        <select
+          value={middleware}
+          onChange={(e) => setMiddleware(e.currentTarget.value)}
+        >
+          {middlewares.map((m) => (
+            <option key={m.name} value={m.name} title={m.description}>
+              {m.name}
+            </option>
+          ))}
+          {!middlewares.some((m) => m.name === middleware) && (
+            <option value={middleware}>{middleware}</option>
+          )}
+        </select>
       </label>
       <div className="menu-actions">
         <button onClick={() => void newProjectAction()}>新規</button>

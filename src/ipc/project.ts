@@ -46,6 +46,15 @@ export function loadProject(path: string): Promise<ProjectFile> {
   return invoke("load_project", { path });
 }
 
+export type MiddlewareInfo = {
+  name: string;
+  description: string;
+};
+
+export function listMiddlewares(): Promise<MiddlewareInfo[]> {
+  return invoke("list_middlewares");
+}
+
 export type GenerateReport = {
   written: string[];
   skipped: string[];

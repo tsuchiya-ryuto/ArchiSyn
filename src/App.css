@@ -66,6 +66,17 @@ body,
   width: 160px;
 }
 
+.menu-middleware {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.menu-middleware > span {
+  font-size: 12px;
+  color: #556;
+}
+
 .menu-actions {
   display: flex;
   gap: 6px;

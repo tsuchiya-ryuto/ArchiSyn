@@ -37,6 +37,7 @@ type ModelState = {
   rfInstance: ReactFlowInstance<ArchNode, Edge> | null;
 
   setProjectName: (name: string) => void;
+  setMiddleware: (middleware: string) => void;
   setCurrentFilePath: (path: string | null) => void;
   setFileStatus: (status: string | null) => void;
   setRfInstance: (instance: ReactFlowInstance<ArchNode, Edge>) => void;
@@ -159,6 +160,7 @@ export const useModelStore = create<ModelState>()((set, get) => ({
     const trimmed = name.trim();
     if (trimmed !== "") set({ projectName: trimmed });
   },
+  setMiddleware: (middleware) => set({ middleware }),
   setCurrentFilePath: (path) => set({ currentFilePath: path }),
   setFileStatus: (status) => set({ fileStatus: status }),
   setRfInstance: (instance) => set({ rfInstance: instance }),
