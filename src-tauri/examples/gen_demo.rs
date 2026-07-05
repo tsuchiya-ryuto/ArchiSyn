@@ -1,4 +1,5 @@
 //! Docker での colcon build 検証用にデモワークスペースを生成する。
+//! SensorFusion (Python) → Controller (C++) の言語混在構成。
 //! 使い方: cargo run --example gen_demo -- <出力ディレクトリ>
 
 use archisyn_lib::codegen::generate_workspace;
@@ -50,7 +51,7 @@ fn demo_project() -> Project {
             NodeDef {
                 id: "n2".to_string(),
                 label: "Controller".to_string(),
-                language: Language::Python,
+                language: Language::Cpp,
                 period_ms: 100,
                 position: Vec2 { x: 300.0, y: 0.0 },
                 size: None,
