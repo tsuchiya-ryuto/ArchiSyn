@@ -1,0 +1,78 @@
+# ArchiSyn サンプルプロジェクト
+# IMU ドライバ → センサフュージョン → コントローラ の3ノード構成。
+# ArchiSyn の「開く」から読み込み、「コード生成」で ROS 2 ワークスペースを生成できます。
+arcsyn_version: '0.1'
+project:
+  name: demo_robot
+  middleware: ros2_humble
+custom_types:
+- name: FusedPose
+  fields:
+  - name: position
+    type: geometry_msgs/Vector3
+  - name: confidence
+    type: float64
+nodes:
+- id: n1
+  label: ImuDriver
+  language: python
+  period_ms: 20
+  position:
+    x: 60.0
+    y: 140.0
+  inputs: []
+  outputs:
+  - name: imu
+    type: sensor_msgs/Imu
+  params: []
+- id: n2
+  label: SensorFusion
+  language: python
+  period_ms: 50
+  position:
+    x: 340.0
+    y: 140.0
+  inputs:
+  - name: imu
+    type: sensor_msgs/Imu
+  outputs:
+  - name: fused
+    type: FusedPose
+  params:
+  - name: alpha
+    type: float64
+    default: '0.7'
+- id: n3
+  label: Controller
+  language: python
+  period_ms: 100
+  position:
+    x: 640.0
+    y: 140.0
+  inputs:
+  - name: pose
+    type: FusedPose
+  outputs:
+  - name: cmd
+    type: geometry_msgs/Twist
+  params: []
+edges:
+- id: e1
+  source:
+    node: n1
+    port: imu
+  target:
+    node: n2
+    port: imu
+- id: e2
+  source:
+    node: n2
+    port: fused
+  target:
+    node: n3
+    port: pose
+viewport:
+  zoom: 1.0
+  pan:
+    x: 0.0
+    y: 0.0

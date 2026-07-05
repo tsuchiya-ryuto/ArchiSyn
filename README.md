@@ -26,13 +26,74 @@
 
 ## 🛠 Prerequisites
 
-T.B.D
+ArchiSyn 本体の開発・実行に必要なもの（詳細な手順は [doc/setup.md](doc/setup.md) を参照）:
+
+| 用途                 | 必要なもの                                                      |
+| -------------------- | --------------------------------------------------------------- |
+| アプリ本体           | Rust (stable) / Node.js 20+ / Tauri v2 のシステム依存パッケージ |
+| 生成コードの動作検証 | Docker（`osrf/ros:humble-desktop-full` イメージ）               |
+
+> ROS 2 Humble は Ubuntu 22.04 向けのため、Ubuntu 24.04 では Docker での検証を推奨しています。
 
 ---
 
 ## 📖 Quick Start
 
-T.B.D
+### 1. アプリを起動する
+
+```bash
+git clone <this-repo>
+cd ArchiSyn
+npm install
+npm run tauri dev
+```
+
+### 2. サンプルプロジェクトを開いてコードを生成する
+
+1. メニューの **開く** から [`examples/demo_robot.arcsyn`](examples/demo_robot.arcsyn) を読み込む
+   （IMU ドライバ → センサフュージョン → コントローラの3ノード構成）
+2. メニュー右の **コード生成** を押し、出力先ディレクトリ（例: `~/demo_ws`）を選ぶ
+3. ROS 2 ワークスペース一式（ノードパッケージ・カスタム型 msgs・launch）が生成される
+
+もちろん、空のキャンバスに「+ ノード追加」でゼロから設計することもできます。
+ポートの型が一致しないノード同士は接続できません（型互換チェック）。
+
+### 3. 生成されたワークスペースをビルド・実行する
+
+```bash
+docker run --rm -it -v ~/demo_ws:/ws -w /ws osrf/ros:humble-desktop-full bash -c \
+  "source /opt/ros/humble/setup.bash && colcon build && \
+   source install/setup.bash && ros2 launch launch/system.launch.py"
+```
+
+### 4. アルゴリズムを実装する
+
+生成物はノードごとに完結したディレクトリになっています:
+
+```
+demo_ws/src/demo_robot_py_nodes/demo_robot_py_nodes/
+└── sensor_fusion/
+    ├── interfaces.py      # インターフェース部（ArchiSyn が毎回再生成。編集不可）
+    └── sensor_fusion.py   # 実装部（ここにアルゴリズムを書く。再生成でも保護される）
+```
+
+`<ノード名>.py` の `on_update()`（周期処理）や `on_<入力ポート名>()`（受信フック）を
+実装してください。設計を変更して再生成しても、実装部は上書きされません。
+
+---
+
+## 🧑‍💻 Development
+
+```bash
+npm run lint          # ESLint
+npm run format:check  # Prettier
+npm run build         # tsc + vite build
+cd src-tauri && cargo test && cargo fmt --check  # Rust テスト・フォーマット
+```
+
+- 実装計画: [doc/plan.md](doc/plan.md)
+- 要求仕様: [doc/required_spec.md](doc/required_spec.md)
+- 開発環境セットアップ: [doc/setup.md](doc/setup.md)
 
 ---
 
