@@ -12,7 +12,7 @@ use std::sync::OnceLock;
 use tera::Tera;
 
 use crate::model::{Language, Project};
-use language::{python::PythonGenerator, GenContext, LanguageGenerator};
+use language::{cpp::CppGenerator, python::PythonGenerator, GenContext, LanguageGenerator};
 use middleware::{ros2_humble::Ros2HumbleAdapter, MiddlewareAdapter};
 
 /// 生成される1ファイル。protected は実装部（既存なら上書きしない）
@@ -152,6 +152,22 @@ pub fn templates() -> &'static Tera {
                 include_str!("templates/python/node_impl.tera"),
             ),
             (
+                "cpp/package_xml.tera",
+                include_str!("templates/cpp/package_xml.tera"),
+            ),
+            (
+                "cpp/cmakelists.tera",
+                include_str!("templates/cpp/cmakelists.tera"),
+            ),
+            (
+                "cpp/interfaces_hpp.tera",
+                include_str!("templates/cpp/interfaces_hpp.tera"),
+            ),
+            (
+                "cpp/node_impl.tera",
+                include_str!("templates/cpp/node_impl.tera"),
+            ),
+            (
                 "msgs/package_xml.tera",
                 include_str!("templates/msgs/package_xml.tera"),
             ),
@@ -186,8 +202,9 @@ pub fn generate_workspace(project: &Project) -> Result<GeneratedWorkspace, Strin
     // カスタム型 → 共通 msgs パッケージ
     ws.files.extend(adapter.msgs_package(project)?);
 
-    // 言語別パッケージ（Phase 1 は Python のみ）
-    let generators: Vec<Box<dyn LanguageGenerator>> = vec![Box::new(PythonGenerator)];
+    // 言語別パッケージ（Phase 1: Python / Phase 2: C++）
+    let generators: Vec<Box<dyn LanguageGenerator>> =
+        vec![Box::new(PythonGenerator), Box::new(CppGenerator)];
     let mut launch_nodes: Vec<(String, String)> = Vec::new(); // (package, node_name)
 
     for generator in &generators {
@@ -208,10 +225,10 @@ pub fn generate_workspace(project: &Project) -> Result<GeneratedWorkspace, Strin
 
     // 未対応言語のノードは警告してスキップ
     for node in &project.nodes {
-        if node.language != Language::Python {
+        if node.language == Language::Rust {
             ws.warnings.push(format!(
-                "ノード「{}」の言語 {:?} は未対応のためスキップしました（Phase 2 で対応予定）",
-                node.label, node.language
+                "ノード「{}」の言語 Rust は未対応のためスキップしました（Phase 2 後半で対応予定）",
+                node.label
             ));
         }
     }

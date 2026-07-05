@@ -1,0 +1,30 @@
+// {{ node.label }} の実装部。
+// このファイルは初回のみ生成され、以後 ArchiSyn は上書きしません（実装ファイル保護）。
+// アルゴリズムを自由に実装してください。
+#include "interfaces.hpp"
+
+namespace {{ pkg }}
+{
+
+class {{ node.class_name }} : public {{ node.class_base }}
+{
+protected:
+  void on_update() override
+  {
+    // TODO: 周期処理（{{ node.period_ms }} ms ごとに呼ばれます）を実装してください
+    //   入力: {% for i in node.inputs %}{{ i.name }}{% if not loop.last %}, {% endif %}{% else %}なし{% endfor %}
+
+    //   出力: {% for o in node.outputs %}publish_{{ o.name }}(msg){% if not loop.last %}, {% endif %}{% else %}なし{% endfor %}
+
+  }
+};
+
+}  // namespace {{ pkg }}
+
+int main(int argc, char ** argv)
+{
+  rclcpp::init(argc, argv);
+  rclcpp::spin(std::make_shared<{{ pkg }}::{{ node.class_name }}>());
+  rclcpp::shutdown();
+  return 0;
+}

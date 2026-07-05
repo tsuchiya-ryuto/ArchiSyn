@@ -1,0 +1,25 @@
+# 自動生成ファイル — コード生成のたびに上書きされます。
+cmake_minimum_required(VERSION 3.8)
+project({{ pkg }})
+
+if(NOT CMAKE_CXX_STANDARD)
+  set(CMAKE_CXX_STANDARD 17)
+  set(CMAKE_CXX_STANDARD_REQUIRED ON)
+endif()
+
+if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  add_compile_options(-Wall -Wextra -Wpedantic)
+endif()
+
+find_package(ament_cmake REQUIRED)
+find_package(rclcpp REQUIRED)
+{% for d in deps %}find_package({{ d }} REQUIRED)
+{% endfor %}
+{% for n in nodes %}add_executable({{ n.node_name }} src/{{ n.node_name }}/{{ n.node_name }}.cpp)
+ament_target_dependencies({{ n.node_name }} rclcpp{% for d in deps %} {{ d }}{% endfor %})
+
+{% endfor %}install(TARGETS
+{% for n in nodes %}  {{ n.node_name }}
+{% endfor %}  DESTINATION lib/${PROJECT_NAME})
+
+ament_package()

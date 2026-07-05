@@ -194,3 +194,64 @@ fn implementation_files_are_protected_on_regeneration() {
         .iter()
         .any(|p| p.ends_with("controller/interfaces.py")));
 }
+
+#[test]
+fn mixed_language_workspace_generates_cpp_package() {
+    // Controller を C++ に切り替えた混在構成
+    let mut project = demo_project();
+    project.nodes[1].language = Language::Cpp;
+
+    let ws = generate_workspace(&project).unwrap();
+    assert!(ws.warnings.is_empty(), "{:?}", ws.warnings);
+    let paths: Vec<String> = ws
+        .files
+        .iter()
+        .map(|f| f.rel_path.to_string_lossy().to_string())
+        .collect();
+
+    for expected in [
+        // Python 側は SensorFusion のみ
+        "src/demo_robot_py_nodes/demo_robot_py_nodes/sensor_fusion/sensor_fusion.py",
+        // C++ 側（ノード完結型）
+        "src/demo_robot_cpp_nodes/CMakeLists.txt",
+        "src/demo_robot_cpp_nodes/package.xml",
+        "src/demo_robot_cpp_nodes/src/controller/interfaces.hpp",
+        "src/demo_robot_cpp_nodes/src/controller/controller.cpp",
+    ] {
+        assert!(
+            paths.contains(&expected.to_string()),
+            "{expected} がない: {paths:?}"
+        );
+    }
+    // Python 側に controller は含まれない
+    assert!(!paths
+        .iter()
+        .any(|p| p.contains("demo_robot_py_nodes/controller")));
+
+    // C++ interfaces: 型・トピック・保護
+    let hpp = content_of(
+        &ws.files,
+        "src/demo_robot_cpp_nodes/src/controller/interfaces.hpp",
+    );
+    assert!(hpp.contains("#include <demo_robot_msgs/msg/fused_pose.hpp>"));
+    assert!(hpp.contains("create_subscription<demo_robot_msgs::msg::FusedPose>"));
+    assert!(hpp.contains("\"sensor_fusion/fused\""));
+    assert!(hpp.contains("std::chrono::milliseconds(100)"));
+
+    let cpp_impl = ws
+        .files
+        .iter()
+        .find(|f| f.rel_path.ends_with("controller/controller.cpp"))
+        .unwrap();
+    assert!(cpp_impl.protected, "C++ 実装部は保護対象のはず");
+
+    // CMakeLists: 実行ファイルと依存
+    let cmake = content_of(&ws.files, "src/demo_robot_cpp_nodes/CMakeLists.txt");
+    assert!(cmake.contains("add_executable(controller src/controller/controller.cpp)"));
+    assert!(cmake.contains("demo_robot_msgs"));
+
+    // launch には両言語のノードが載る
+    let launch = content_of(&ws.files, "launch/system.launch.py");
+    assert!(launch.contains("package=\"demo_robot_py_nodes\""));
+    assert!(launch.contains("package=\"demo_robot_cpp_nodes\""));
+}

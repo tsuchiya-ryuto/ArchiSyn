@@ -1,0 +1,58 @@
+// 自動生成ファイル — ArchiSyn が生成する {{ node.label }} のインターフェース部です。
+// コード生成のたびに上書きされるため、編集しないでください。
+// アルゴリズムは同じディレクトリの {{ node.node_name }}.cpp（実装部）に書いてください。
+#pragma once
+
+#include <chrono>
+#include <string>
+
+#include <rclcpp/rclcpp.hpp>
+
+{% for inc in includes %}{{ inc }}
+{% endfor %}
+namespace {{ pkg }}
+{
+
+/// {{ node.label }} のインターフェース部（自動生成）。
+/// Subscriber / Publisher / タイマ / パラメータの配線を担当します。
+class {{ node.class_base }} : public rclcpp::Node
+{
+public:
+  {{ node.class_base }}()
+  : rclcpp::Node("{{ node.node_name }}")
+  {
+{% for p in node.params %}    this->declare_parameter("{{ p.name }}", {{ p.cpp_default }});
+{% endfor %}{% for i in node.inputs %}    {{ i.name }}_sub_ = this->create_subscription<{{ i.cpp_type }}>(
+      "{{ i.topic }}", 10,
+      [this]({{ i.cpp_type }}::SharedPtr msg) {
+        {{ i.name }} = msg;
+        on_{{ i.name }}(msg);
+      });
+{% endfor %}{% for o in node.outputs %}    {{ o.name }}_pub_ = this->create_publisher<{{ o.cpp_type }}>("{{ o.topic }}", 10);
+{% endfor %}    timer_ = this->create_wall_timer(
+      std::chrono::milliseconds({{ node.period_ms }}), [this] { on_update(); });
+  }
+
+  ~{{ node.class_base }}() override = default;
+
+protected:
+{% for p in node.params %}  {{ p.cpp_type }} {{ p.name }}() const { return this->get_parameter("{{ p.name }}").{{ p.accessor }}(); }
+{% endfor %}{% for i in node.inputs %}
+  /// 最新の受信メッセージ（未受信なら nullptr）
+  {{ i.cpp_type }}::SharedPtr {{ i.name }};
+
+  /// {{ i.name }} 受信時フック（必要なら実装部でオーバーライド）
+  virtual void on_{{ i.name }}({{ i.cpp_type }}::SharedPtr) {}
+{% endfor %}{% for o in node.outputs %}
+  void publish_{{ o.name }}(const {{ o.cpp_type }} & msg) { {{ o.name }}_pub_->publish(msg); }
+{% endfor %}
+  /// 周期処理（{{ node.period_ms }} ms ごと。実装部でオーバーライドしてください）
+  virtual void on_update() = 0;
+
+private:
+{% for i in node.inputs %}  rclcpp::Subscription<{{ i.cpp_type }}>::SharedPtr {{ i.name }}_sub_;
+{% endfor %}{% for o in node.outputs %}  rclcpp::Publisher<{{ o.cpp_type }}>::SharedPtr {{ o.name }}_pub_;
+{% endfor %}  rclcpp::TimerBase::SharedPtr timer_;
+};
+
+}  // namespace {{ pkg }}
