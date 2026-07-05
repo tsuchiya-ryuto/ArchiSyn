@@ -44,8 +44,8 @@ git push origin master --tags
 
 | OS            | インストール                                           | アンインストール                                                         |
 | ------------- | ------------------------------------------------------ | ------------------------------------------------------------------------ |
-| Ubuntu/Debian | `sudo apt install ./ArchiSyn_x.y.z_amd64.deb`          | `sudo apt remove archisyn`                                               |
-| Fedora 系     | `sudo dnf install ./ArchiSyn-x.y.z-1.x86_64.rpm`       | `sudo dnf remove archisyn`                                               |
+| Ubuntu/Debian | `sudo apt install ./ArchiSyn_x.y.z_amd64.deb`          | `sudo apt remove archi-syn`（パッケージ名は `archi-syn`）                |
+| Fedora 系     | `sudo dnf install ./ArchiSyn-x.y.z-1.x86_64.rpm`       | `sudo dnf remove archi-syn`                                              |
 | Linux（共通） | `.AppImage` に実行権限を付けて起動（インストール不要） | ファイル削除のみ                                                         |
 | macOS         | `.dmg` を開いて Applications へドラッグ                | Applications から削除                                                    |
 | Windows       | `.msi` / `.exe` を実行                                 | 「設定 > アプリ」から ArchiSyn を削除（MSI/NSIS の標準アンインストーラ） |
