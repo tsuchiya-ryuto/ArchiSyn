@@ -37,6 +37,24 @@ pub fn load_project(path: String) -> Result<Project, String> {
     Ok(project)
 }
 
+/// GUI のミドルウェアセレクタに表示する情報
+#[derive(Debug, Serialize)]
+pub struct MiddlewareInfo {
+    pub name: String,
+    pub description: String,
+}
+
+#[tauri::command]
+pub fn list_middlewares() -> Vec<MiddlewareInfo> {
+    crate::codegen::middleware::adapters()
+        .iter()
+        .map(|a| MiddlewareInfo {
+            name: a.name().to_string(),
+            description: a.description().to_string(),
+        })
+        .collect()
+}
+
 #[tauri::command]
 pub fn generate_code(out_dir: String, project: Project) -> Result<GenerateReport, String> {
     let workspace = crate::codegen::generate_workspace(&project)?;

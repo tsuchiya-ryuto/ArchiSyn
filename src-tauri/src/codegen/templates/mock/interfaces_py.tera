@@ -1,0 +1,31 @@
+# 自動生成ファイル — ArchiSyn (mock_pubsub) が生成する {{ node.label }} のインターフェース部です。
+# コード生成のたびに上書きされるため、編集しないでください。
+# アルゴリズムは同じディレクトリの {{ node.node_name }}.py（実装部）に書いてください。
+from __future__ import annotations
+
+from mockbus import Bus, MockNode
+from msg_types import *  # noqa: F401,F403
+
+
+class {{ node.class_base }}(MockNode):
+    """{{ node.label }} のインターフェース部（自動生成）"""
+
+    def __init__(self, bus: Bus) -> None:
+        super().__init__("{{ node.node_name }}", {{ node.period_ms }}, bus)
+{% for p in node.params %}        self.{{ p.name }} = {{ p.py_default }}  # パラメータ
+{% endfor %}{% for i in node.inputs %}        self.{{ i.name }}: {{ i.py_type }} | None = None
+        bus.subscribe("{{ i.topic }}", self._handle_{{ i.name }})
+{% endfor %}
+{% for i in node.inputs %}    def _handle_{{ i.name }}(self, msg: {{ i.py_type }}) -> None:
+        self.{{ i.name }} = msg
+        self.on_{{ i.name }}(msg)
+
+    def on_{{ i.name }}(self, msg: {{ i.py_type }}) -> None:
+        """{{ i.name }} 受信時フック（必要なら実装部でオーバーライド）"""
+
+{% endfor %}{% for o in node.outputs %}    def publish_{{ o.name }}(self, msg: {{ o.py_type }}) -> None:
+        self.bus.publish("{{ o.topic }}", msg)
+
+{% endfor %}    def on_update(self) -> None:
+        """周期処理（{{ node.period_ms }} ms ごと。実装部でオーバーライドしてください）"""
+        raise NotImplementedError

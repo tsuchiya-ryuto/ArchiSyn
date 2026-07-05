@@ -1,0 +1,30 @@
+# 自動生成ファイル — ArchiSyn (mock_pubsub) のランナーです。
+# コード生成のたびに上書きされるため、編集しないでください。
+# 使い方: python3 run.py
+"""{{ project_name }} の全ノードを 1 プロセスで実行します（ROS 不要）。"""
+import time
+
+from mockbus import Bus
+{% for n in nodes %}from nodes.{{ n.node_name }}.{{ n.node_name }} import {{ n.class_name }}
+{% endfor %}
+
+def main() -> None:
+    bus = Bus()
+    nodes = [
+{% for n in nodes %}        {{ n.class_name }}(bus),
+{% endfor %}    ]
+    for node in nodes:
+        node.start()
+    print("mock_pubsub: 全ノードを起動しました（Ctrl+C で終了）", flush=True)
+    try:
+        while True:
+            time.sleep(0.5)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        for node in nodes:
+            node.stop()
+
+
+if __name__ == "__main__":
+    main()

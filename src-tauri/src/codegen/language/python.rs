@@ -187,8 +187,8 @@ impl LanguageGenerator for PythonGenerator {
     }
 }
 
-/// パラメータ型 → Python 型ヒント
-fn python_type(ty: &str) -> &'static str {
+/// パラメータ型 → Python 型ヒント（mock_pubsub アダプタからも利用）
+pub(crate) fn python_type(ty: &str) -> &'static str {
     match ty {
         "bool" => "bool",
         "int64" => "int",
@@ -198,7 +198,7 @@ fn python_type(ty: &str) -> &'static str {
 }
 
 /// 既定値（文字列保持）を Python リテラルへ変換。解釈できない場合は型の既定値。
-fn python_default(param: &ParamDef) -> String {
+pub(crate) fn python_default(param: &ParamDef) -> String {
     let raw = param.default.trim();
     match param.ty.as_str() {
         "bool" => match raw.to_ascii_lowercase().as_str() {

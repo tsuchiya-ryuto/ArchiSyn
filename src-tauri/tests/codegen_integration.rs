@@ -308,3 +308,62 @@ fn rust_nodes_generate_cargo_package() {
     let pkg_xml = content_of(&ws.files, "src/demo_robot_rust_nodes/package.xml");
     assert!(pkg_xml.contains("<build_type>ament_cargo</build_type>"));
 }
+
+#[test]
+fn unknown_middleware_is_rejected() {
+    let mut project = demo_project();
+    project.project.middleware = "unknown_mw".to_string();
+    let err = generate_workspace(&project).unwrap_err();
+    assert!(err.contains("未対応のミドルウェア"), "{err}");
+    assert!(err.contains("ros2_humble"), "対応一覧を含むべき: {err}");
+}
+
+#[test]
+fn mock_pubsub_generates_runnable_python_workspace() {
+    let mut project = demo_project();
+    project.project.middleware = "mock_pubsub".to_string();
+    // 言語設定は無視される（警告付き）
+    project.nodes[1].language = Language::Cpp;
+
+    let ws = generate_workspace(&project).unwrap();
+    assert!(ws.warnings.iter().any(|w| w.contains("mock_pubsub")));
+
+    let paths: Vec<String> = ws
+        .files
+        .iter()
+        .map(|f| f.rel_path.to_string_lossy().to_string())
+        .collect();
+    for expected in [
+        "run.py",
+        "mockbus.py",
+        "msg_types.py",
+        "nodes/sensor_fusion/interfaces.py",
+        "nodes/sensor_fusion/sensor_fusion.py",
+        "nodes/controller/interfaces.py",
+        "nodes/controller/controller.py",
+    ] {
+        assert!(
+            paths.contains(&expected.to_string()),
+            "{expected} がない: {paths:?}"
+        );
+    }
+
+    // カスタム型は dataclass、外部型はスタブ
+    let types = content_of(&ws.files, "msg_types.py");
+    assert!(types.contains("class FusedPose:"));
+    assert!(types.contains("confidence: float = 0.0"));
+    assert!(types.contains("class Imu:"));
+
+    // トピック配線はエッジ由来（ROS 版と同じ規約）
+    let controller = content_of(&ws.files, "nodes/controller/interfaces.py");
+    assert!(controller.contains("bus.subscribe(\"sensor_fusion/fused\""));
+
+    // 実装部は保護対象
+    assert!(
+        ws.files
+            .iter()
+            .find(|f| f.rel_path.ends_with("controller/controller.py"))
+            .unwrap()
+            .protected
+    );
+}

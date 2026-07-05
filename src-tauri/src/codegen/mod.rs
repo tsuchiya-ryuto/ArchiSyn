@@ -11,11 +11,7 @@ use std::sync::OnceLock;
 
 use tera::Tera;
 
-use crate::model::{Language, Project};
-use language::{
-    cpp::CppGenerator, python::PythonGenerator, rust::RustGenerator, GenContext, LanguageGenerator,
-};
-use middleware::{ros2_humble::Ros2HumbleAdapter, MiddlewareAdapter};
+use crate::model::Project;
 
 /// 生成される1ファイル。protected は実装部（既存なら上書きしない）
 #[derive(Debug, Clone)]
@@ -186,6 +182,22 @@ pub fn templates() -> &'static Tera {
                 include_str!("templates/rust/node_impl.tera"),
             ),
             (
+                "mock/interfaces_py.tera",
+                include_str!("templates/mock/interfaces_py.tera"),
+            ),
+            (
+                "mock/node_impl.tera",
+                include_str!("templates/mock/node_impl.tera"),
+            ),
+            (
+                "mock/run_py.tera",
+                include_str!("templates/mock/run_py.tera"),
+            ),
+            (
+                "mock/msg_types.tera",
+                include_str!("templates/mock/msg_types.tera"),
+            ),
+            (
                 "msgs/package_xml.tera",
                 include_str!("templates/msgs/package_xml.tera"),
             ),
@@ -203,61 +215,11 @@ pub fn templates() -> &'static Tera {
     })
 }
 
-/// プロジェクト全体からワークスペースの全生成ファイルを組み立てる
+/// プロジェクト全体からワークスペースの全生成ファイルを組み立てる。
+/// `middleware:` フィールドに対応するアダプタへ委譲する（F-7）。
 pub fn generate_workspace(project: &Project) -> Result<GeneratedWorkspace, String> {
-    let adapter = Ros2HumbleAdapter;
-    let node_names = build_node_names(project);
-    let topics = TopicMap::build(project, &node_names);
-    let ctx = GenContext {
-        project,
-        adapter: &adapter,
-        node_names: &node_names,
-        topics: &topics,
-    };
-
-    let mut ws = GeneratedWorkspace::default();
-
-    // カスタム型 → 共通 msgs パッケージ
-    ws.files.extend(adapter.msgs_package(project)?);
-
-    // 言語別パッケージ（Phase 1: Python / Phase 2: C++, Rust）
-    let generators: Vec<Box<dyn LanguageGenerator>> = vec![
-        Box::new(PythonGenerator),
-        Box::new(CppGenerator),
-        Box::new(RustGenerator),
-    ];
-    let mut launch_nodes: Vec<(String, String)> = Vec::new(); // (package, node_name)
-
-    for generator in &generators {
-        let nodes: Vec<_> = project
-            .nodes
-            .iter()
-            .filter(|n| n.language == generator.language())
-            .collect();
-        if nodes.is_empty() {
-            continue;
-        }
-        ws.files.extend(generator.generate(&ctx, &nodes)?);
-        let pkg = generator.package_name(project);
-        for node in &nodes {
-            launch_nodes.push((pkg.clone(), node_names[&node.id].clone()));
-        }
-    }
-
-    // Rust ノードを含む場合はビルド環境の注意を添える
-    if project.nodes.iter().any(|n| n.language == Language::Rust) {
-        ws.warnings.push(
-            "Rust ノードのビルドには ros2_rust underlay が必要です（docker/humble-rust.Dockerfile を使用してください）"
-                .to_string(),
-        );
-    }
-
-    // launch ファイル
-    if !launch_nodes.is_empty() {
-        ws.files.extend(adapter.launch_files(&launch_nodes)?);
-    }
-
-    Ok(ws)
+    let adapter = middleware::adapter_for(&project.project.middleware)?;
+    adapter.generate(project)
 }
 
 #[cfg(test)]

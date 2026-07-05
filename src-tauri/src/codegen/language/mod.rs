@@ -6,13 +6,13 @@ use std::collections::HashMap;
 
 use crate::model::{Language, NodeDef, Project};
 
-use super::middleware::MiddlewareAdapter;
+use super::middleware::RosTypeResolver;
 use super::{GeneratedFile, TopicMap};
 
-/// 言語別ジェネレータへ渡す共有コンテキスト
+/// 言語別ジェネレータへ渡す共有コンテキスト（ROS 系アダプタが構築する）
 pub struct GenContext<'a> {
     pub project: &'a Project,
-    pub adapter: &'a dyn MiddlewareAdapter,
+    pub adapter: &'a dyn RosTypeResolver,
     /// ノード id → 一意な snake_case 名
     pub node_names: &'a HashMap<String, String>,
     pub topics: &'a TopicMap,

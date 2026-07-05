@@ -13,6 +13,7 @@ pub fn run() {
             commands::save_project,
             commands::load_project,
             commands::generate_code,
+            commands::list_middlewares,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

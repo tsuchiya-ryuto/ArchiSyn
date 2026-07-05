@@ -1,0 +1,20 @@
+# 自動生成ファイル — ArchiSyn (mock_pubsub) が生成する型定義です。
+# コード生成のたびに上書きされるため、編集しないでください。
+from __future__ import annotations
+
+from dataclasses import dataclass
+
+{% for s in stubs %}
+@dataclass
+class {{ s.name }}:
+    """{{ s.origin }} のスタブ（mock 用プレースホルダ。フィールドは自由に足して構いません）"""
+
+    pass
+
+{% endfor %}{% for t in types %}
+@dataclass
+class {{ t.name }}:
+{% for f in t.fields %}    {{ f.name }}: {{ f.py_type }} = {{ f.py_default }}
+{% endfor %}{% if not t.fields %}    pass
+{% endif %}
+{% endfor %}

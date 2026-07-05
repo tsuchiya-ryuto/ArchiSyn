@@ -3,12 +3,17 @@ use std::path::PathBuf;
 
 use tera::Context;
 
-use crate::codegen::{snake_case, templates, GeneratedFile};
-use crate::model::Project;
+use crate::codegen::language::{
+    cpp::CppGenerator, python::PythonGenerator, rust::RustGenerator, GenContext, LanguageGenerator,
+};
+use crate::codegen::{
+    build_node_names, snake_case, templates, GeneratedFile, GeneratedWorkspace, TopicMap,
+};
+use crate::model::{Language, Project};
 
-use super::{MiddlewareAdapter, ResolvedType};
+use super::{MiddlewareAdapter, ResolvedType, RosTypeResolver};
 
-/// ROS 2 Humble 向けアダプタ（Phase 1）
+/// ROS 2 Humble 向けアダプタ（Phase 1〜2）
 pub struct Ros2HumbleAdapter;
 
 /// .msg のプリミティブ型（パッケージ解決が不要なもの）
@@ -22,6 +27,67 @@ impl MiddlewareAdapter for Ros2HumbleAdapter {
         "ros2_humble"
     }
 
+    fn description(&self) -> &'static str {
+        "ROS 2 Humble（Python / C++ / Rust ノードの colcon ワークスペースを生成）"
+    }
+
+    fn generate(&self, project: &Project) -> Result<GeneratedWorkspace, String> {
+        let node_names = build_node_names(project);
+        let topics = TopicMap::build(project, &node_names);
+        let ctx = GenContext {
+            project,
+            adapter: self,
+            node_names: &node_names,
+            topics: &topics,
+        };
+
+        let mut ws = GeneratedWorkspace::default();
+
+        // カスタム型 → 共通 msgs パッケージ
+        ws.files.extend(self.msgs_package(project)?);
+
+        // 言語別パッケージ（ノード単位の言語切替 F-6）
+        let generators: Vec<Box<dyn LanguageGenerator>> = vec![
+            Box::new(PythonGenerator),
+            Box::new(CppGenerator),
+            Box::new(RustGenerator),
+        ];
+        let mut launch_nodes: Vec<(String, String)> = Vec::new(); // (package, node_name)
+
+        for generator in &generators {
+            let nodes: Vec<_> = project
+                .nodes
+                .iter()
+                .filter(|n| n.language == generator.language())
+                .collect();
+            if nodes.is_empty() {
+                continue;
+            }
+            ws.files.extend(generator.generate(&ctx, &nodes)?);
+            let pkg = generator.package_name(project);
+            for node in &nodes {
+                launch_nodes.push((pkg.clone(), node_names[&node.id].clone()));
+            }
+        }
+
+        // Rust ノードを含む場合はビルド環境の注意を添える
+        if project.nodes.iter().any(|n| n.language == Language::Rust) {
+            ws.warnings.push(
+                "Rust ノードのビルドには ros2_rust underlay が必要です（docker/humble-rust.Dockerfile を使用してください）"
+                    .to_string(),
+            );
+        }
+
+        // launch ファイル
+        if !launch_nodes.is_empty() {
+            ws.files.extend(self.launch_files(&launch_nodes)?);
+        }
+
+        Ok(ws)
+    }
+}
+
+impl RosTypeResolver for Ros2HumbleAdapter {
     fn msgs_package_name(&self, project: &Project) -> String {
         format!("{}_msgs", snake_case(&project.project.name))
     }
@@ -43,7 +109,10 @@ impl MiddlewareAdapter for Ros2HumbleAdapter {
             "型「{ty}」を解決できません（カスタム型に未定義。pkg/Type 形式か型エディタで定義してください）"
         ))
     }
+}
 
+impl Ros2HumbleAdapter {
+    /// カスタム型定義から共通メッセージパッケージ一式を生成する
     fn msgs_package(&self, project: &Project) -> Result<Vec<GeneratedFile>, String> {
         if project.custom_types.is_empty() {
             return Ok(Vec::new());
@@ -111,6 +180,7 @@ impl MiddlewareAdapter for Ros2HumbleAdapter {
         Ok(files)
     }
 
+    /// 全ノードを起動する launch ファイルを生成する
     fn launch_files(&self, nodes: &[(String, String)]) -> Result<Vec<GeneratedFile>, String> {
         let entries: Vec<_> = nodes
             .iter()

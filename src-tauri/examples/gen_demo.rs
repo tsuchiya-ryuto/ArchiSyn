@@ -1,6 +1,7 @@
 //! Docker での colcon build 検証用にデモワークスペースを生成する。
 //! ImuDriver (Rust) → SensorFusion (Python) → Controller (C++) の3言語混在構成。
-//! 使い方: cargo run --example gen_demo -- <出力ディレクトリ>
+//! 使い方: cargo run --example gen_demo -- <出力ディレクトリ> [middleware]
+//!   middleware: ros2_humble（既定） | mock_pubsub
 
 use archisyn_lib::codegen::generate_workspace;
 use archisyn_lib::fs::safe_write::write_files;
@@ -111,8 +112,12 @@ fn demo_project() -> Project {
 fn main() {
     let out = std::env::args()
         .nth(1)
-        .expect("使い方: cargo run --example gen_demo -- <出力ディレクトリ>");
-    let ws = generate_workspace(&demo_project()).expect("生成に失敗");
+        .expect("使い方: cargo run --example gen_demo -- <出力ディレクトリ> [middleware]");
+    let mut project = demo_project();
+    if let Some(mw) = std::env::args().nth(2) {
+        project.project.middleware = mw;
+    }
+    let ws = generate_workspace(&project).expect("生成に失敗");
     let report = write_files(std::path::Path::new(&out), &ws.files).expect("書き込みに失敗");
     println!("written: {} files", report.written.len());
     for p in &report.written {
