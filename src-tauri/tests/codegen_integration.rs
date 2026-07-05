@@ -255,3 +255,56 @@ fn mixed_language_workspace_generates_cpp_package() {
     assert!(launch.contains("package=\"demo_robot_py_nodes\""));
     assert!(launch.contains("package=\"demo_robot_cpp_nodes\""));
 }
+
+#[test]
+fn rust_nodes_generate_cargo_package() {
+    // Controller を Rust に切り替えた構成
+    let mut project = demo_project();
+    project.nodes[1].language = Language::Rust;
+
+    let ws = generate_workspace(&project).unwrap();
+    // Rust ノードには underlay の注意警告が付く
+    assert!(ws.warnings.iter().any(|w| w.contains("ros2_rust")));
+
+    let paths: Vec<String> = ws
+        .files
+        .iter()
+        .map(|f| f.rel_path.to_string_lossy().to_string())
+        .collect();
+    for expected in [
+        "src/demo_robot_rust_nodes/Cargo.toml",
+        "src/demo_robot_rust_nodes/package.xml",
+        "src/demo_robot_rust_nodes/src/controller/interfaces.rs",
+        "src/demo_robot_rust_nodes/src/controller/controller.rs",
+    ] {
+        assert!(
+            paths.contains(&expected.to_string()),
+            "{expected} がない: {paths:?}"
+        );
+    }
+
+    let cargo = content_of(&ws.files, "src/demo_robot_rust_nodes/Cargo.toml");
+    assert!(cargo.contains("name = \"controller\""));
+    assert!(cargo.contains("path = \"src/controller/controller.rs\""));
+    assert!(cargo.contains("demo_robot_msgs = \"*\""));
+
+    let interfaces = content_of(
+        &ws.files,
+        "src/demo_robot_rust_nodes/src/controller/interfaces.rs",
+    );
+    assert!(interfaces.contains("pub struct ControllerInterfaces"));
+    assert!(interfaces.contains("\"sensor_fusion/fused\""));
+    assert!(interfaces.contains("demo_robot_msgs::msg::FusedPose"));
+    assert!(interfaces.contains("Duration::from_millis(100)"));
+
+    let impl_file = ws
+        .files
+        .iter()
+        .find(|f| f.rel_path.ends_with("controller/controller.rs"))
+        .unwrap();
+    assert!(impl_file.protected, "Rust 実装部は保護対象のはず");
+
+    // package.xml は ament_cargo
+    let pkg_xml = content_of(&ws.files, "src/demo_robot_rust_nodes/package.xml");
+    assert!(pkg_xml.contains("<build_type>ament_cargo</build_type>"));
+}

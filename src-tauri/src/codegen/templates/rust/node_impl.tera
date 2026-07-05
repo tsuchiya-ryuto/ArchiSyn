@@ -1,0 +1,23 @@
+// {{ node.label }} の実装部。
+// このファイルは初回のみ生成され、以後 ArchiSyn は上書きしません（実装ファイル保護）。
+// アルゴリズムを自由に実装してください。
+
+mod interfaces;
+
+use interfaces::{{ node.struct_name }};
+
+/// 周期処理（{{ node.period_ms }} ms ごとに呼ばれます）
+fn on_update(_io: &{{ node.struct_name }}) {
+    // TODO: 周期処理を実装してください
+    //   入力: {% for i in node.inputs %}_io.{{ i.name }}{% if not loop.last %}, {% endif %}{% else %}なし{% endfor %}（最新の受信メッセージ）
+    //   出力: {% for o in node.outputs %}_io.publish_{{ o.name }}(msg){% if not loop.last %}, {% endif %}{% else %}なし{% endfor %}
+
+}
+
+fn main() -> Result<(), rclrs::RclrsError> {
+    let mut executor = rclrs::Context::default_from_env()?.create_basic_executor();
+    let io = {{ node.struct_name }}::new(&executor)?;
+    let _timer = io.start(on_update)?;
+    executor.spin(rclrs::SpinOptions::default());
+    Ok(())
+}

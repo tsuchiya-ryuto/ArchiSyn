@@ -1,5 +1,5 @@
 //! Docker での colcon build 検証用にデモワークスペースを生成する。
-//! SensorFusion (Python) → Controller (C++) の言語混在構成。
+//! ImuDriver (Rust) → SensorFusion (Python) → Controller (C++) の3言語混在構成。
 //! 使い方: cargo run --example gen_demo -- <出力ディレクトリ>
 
 use archisyn_lib::codegen::generate_workspace;
@@ -27,6 +27,20 @@ fn demo_project() -> Project {
             ],
         }],
         nodes: vec![
+            NodeDef {
+                id: "n0".to_string(),
+                label: "ImuDriver".to_string(),
+                language: Language::Rust,
+                period_ms: 20,
+                position: Vec2 { x: -300.0, y: 0.0 },
+                size: None,
+                inputs: vec![],
+                outputs: vec![PortDef {
+                    name: "imu".to_string(),
+                    ty: "sensor_msgs/Imu".to_string(),
+                }],
+                params: vec![],
+            },
             NodeDef {
                 id: "n1".to_string(),
                 label: "SensorFusion".to_string(),
@@ -66,17 +80,30 @@ fn demo_project() -> Project {
                 params: vec![],
             },
         ],
-        edges: vec![EdgeDef {
-            id: "e1".to_string(),
-            source: Endpoint {
-                node: "n1".to_string(),
-                port: "fused".to_string(),
+        edges: vec![
+            EdgeDef {
+                id: "e0".to_string(),
+                source: Endpoint {
+                    node: "n0".to_string(),
+                    port: "imu".to_string(),
+                },
+                target: Endpoint {
+                    node: "n1".to_string(),
+                    port: "imu".to_string(),
+                },
             },
-            target: Endpoint {
-                node: "n2".to_string(),
-                port: "pose".to_string(),
+            EdgeDef {
+                id: "e1".to_string(),
+                source: Endpoint {
+                    node: "n1".to_string(),
+                    port: "fused".to_string(),
+                },
+                target: Endpoint {
+                    node: "n2".to_string(),
+                    port: "pose".to_string(),
+                },
             },
-        }],
+        ],
         viewport: Viewport::default(),
     }
 }

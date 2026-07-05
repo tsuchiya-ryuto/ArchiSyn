@@ -1,5 +1,6 @@
 pub mod cpp;
 pub mod python;
+pub mod rust;
 
 use std::collections::HashMap;
 

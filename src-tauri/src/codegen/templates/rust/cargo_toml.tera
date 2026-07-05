@@ -1,0 +1,17 @@
+# 自動生成ファイル — コード生成のたびに上書きされます。
+# メッセージ crate は crates.io ではなく、ros2_rust underlay の
+# ワークスペースから colcon-ros-cargo が解決します。
+[package]
+name = "{{ pkg }}"
+version = "0.1.0"
+edition = "2021"
+autobins = false
+
+{% for n in nodes %}[[bin]]
+name = "{{ n.node_name }}"
+path = "src/{{ n.node_name }}/{{ n.node_name }}.rs"
+
+{% endfor %}[dependencies]
+rclrs = "*"
+{% for d in deps %}{{ d }} = "*"
+{% endfor %}

@@ -12,7 +12,9 @@ use std::sync::OnceLock;
 use tera::Tera;
 
 use crate::model::{Language, Project};
-use language::{cpp::CppGenerator, python::PythonGenerator, GenContext, LanguageGenerator};
+use language::{
+    cpp::CppGenerator, python::PythonGenerator, rust::RustGenerator, GenContext, LanguageGenerator,
+};
 use middleware::{ros2_humble::Ros2HumbleAdapter, MiddlewareAdapter};
 
 /// 生成される1ファイル。protected は実装部（既存なら上書きしない）
@@ -168,6 +170,22 @@ pub fn templates() -> &'static Tera {
                 include_str!("templates/cpp/node_impl.tera"),
             ),
             (
+                "rust/package_xml.tera",
+                include_str!("templates/rust/package_xml.tera"),
+            ),
+            (
+                "rust/cargo_toml.tera",
+                include_str!("templates/rust/cargo_toml.tera"),
+            ),
+            (
+                "rust/interfaces_rs.tera",
+                include_str!("templates/rust/interfaces_rs.tera"),
+            ),
+            (
+                "rust/node_impl.tera",
+                include_str!("templates/rust/node_impl.tera"),
+            ),
+            (
                 "msgs/package_xml.tera",
                 include_str!("templates/msgs/package_xml.tera"),
             ),
@@ -202,9 +220,12 @@ pub fn generate_workspace(project: &Project) -> Result<GeneratedWorkspace, Strin
     // カスタム型 → 共通 msgs パッケージ
     ws.files.extend(adapter.msgs_package(project)?);
 
-    // 言語別パッケージ（Phase 1: Python / Phase 2: C++）
-    let generators: Vec<Box<dyn LanguageGenerator>> =
-        vec![Box::new(PythonGenerator), Box::new(CppGenerator)];
+    // 言語別パッケージ（Phase 1: Python / Phase 2: C++, Rust）
+    let generators: Vec<Box<dyn LanguageGenerator>> = vec![
+        Box::new(PythonGenerator),
+        Box::new(CppGenerator),
+        Box::new(RustGenerator),
+    ];
     let mut launch_nodes: Vec<(String, String)> = Vec::new(); // (package, node_name)
 
     for generator in &generators {
@@ -223,14 +244,12 @@ pub fn generate_workspace(project: &Project) -> Result<GeneratedWorkspace, Strin
         }
     }
 
-    // 未対応言語のノードは警告してスキップ
-    for node in &project.nodes {
-        if node.language == Language::Rust {
-            ws.warnings.push(format!(
-                "ノード「{}」の言語 Rust は未対応のためスキップしました（Phase 2 後半で対応予定）",
-                node.label
-            ));
-        }
+    // Rust ノードを含む場合はビルド環境の注意を添える
+    if project.nodes.iter().any(|n| n.language == Language::Rust) {
+        ws.warnings.push(
+            "Rust ノードのビルドには ros2_rust underlay が必要です（docker/humble-rust.Dockerfile を使用してください）"
+                .to_string(),
+        );
     }
 
     // launch ファイル

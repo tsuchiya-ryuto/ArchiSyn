@@ -1,0 +1,66 @@
+// 自動生成ファイル — ArchiSyn が生成する {{ node.label }} のインターフェース部です。
+// コード生成のたびに上書きされるため、編集しないでください。
+// アルゴリズムは同じディレクトリの {{ node.node_name }}.rs（実装部）に書いてください。
+#![allow(dead_code)]
+
+use std::sync::{Arc, Mutex};
+use std::time::Duration;
+
+/// {{ node.label }} のインターフェース部（自動生成）。
+/// Subscriber / Publisher / タイマ / パラメータの配線を担当します。
+pub struct {{ node.struct_name }} {
+    pub node: rclrs::Node,
+{% for i in node.inputs %}    /// 最新の受信メッセージ（未受信なら None）
+    pub {{ i.name }}: Arc<Mutex<Option<{{ i.rust_type }}>>>,
+{% endfor %}{% for p in node.params %}    {{ p.name }}_param: rclrs::MandatoryParameter<{{ p.rust_type }}>,
+{% endfor %}{% for o in node.outputs %}    {{ o.name }}_pub: rclrs::Publisher<{{ o.rust_type }}>,
+{% endfor %}{% for i in node.inputs %}    _{{ i.name }}_sub: rclrs::Subscription<{{ i.rust_type }}>,
+{% endfor %}}
+
+impl {{ node.struct_name }} {
+    /// ノードを作成し、Subscriber / Publisher / パラメータを配線する
+    pub fn new(executor: &rclrs::Executor) -> Result<Arc<Self>, rclrs::RclrsError> {
+        let node = executor.create_node("{{ node.node_name }}")?;
+{% for p in node.params %}        let {{ p.name }}_param = node
+            .declare_parameter("{{ p.name }}")
+            .default({{ p.rust_default }})
+            .mandatory()?;
+{% endfor %}{% for i in node.inputs %}        let {{ i.name }}: Arc<Mutex<Option<{{ i.rust_type }}>>> = Arc::new(Mutex::new(None));
+        let {{ i.name }}_in_sub = Arc::clone(&{{ i.name }});
+        let {{ i.name }}_sub = node.create_subscription(
+            "{{ i.topic }}",
+            move |msg: {{ i.rust_type }}| {
+                *{{ i.name }}_in_sub.lock().unwrap() = Some(msg);
+            },
+        )?;
+{% endfor %}{% for o in node.outputs %}        let {{ o.name }}_pub = node.create_publisher::<{{ o.rust_type }}>("{{ o.topic }}")?;
+{% endfor %}        Ok(Arc::new(Self {
+            node,
+{% for i in node.inputs %}            {{ i.name }},
+{% endfor %}{% for p in node.params %}            {{ p.name }}_param,
+{% endfor %}{% for o in node.outputs %}            {{ o.name }}_pub,
+{% endfor %}{% for i in node.inputs %}            _{{ i.name }}_sub: {{ i.name }}_sub,
+{% endfor %}        }))
+    }
+{% for p in node.params %}
+    pub fn {{ p.name }}(&self) -> {{ p.rust_type }} {
+        self.{{ p.name }}_param.get()
+    }
+{% endfor %}{% for o in node.outputs %}
+    pub fn publish_{{ o.name }}(&self, msg: {{ o.rust_type }}) -> Result<(), rclrs::RclrsError> {
+        self.{{ o.name }}_pub.publish(msg)
+    }
+{% endfor %}
+    /// on_update を {{ node.period_ms }} ms 周期で実行するタイマを登録する
+    /// （返り値のタイマは呼び出し側で保持し続けること）
+    pub fn start(
+        self: &Arc<Self>,
+        on_update: impl Fn(&Self) + Send + Sync + 'static,
+    ) -> Result<rclrs::Timer, rclrs::RclrsError> {
+        let me = Arc::clone(self);
+        self.node.create_timer_repeating(
+            Duration::from_millis({{ node.period_ms }}),
+            move || on_update(&me),
+        )
+    }
+}
