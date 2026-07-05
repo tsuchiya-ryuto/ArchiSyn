@@ -5,6 +5,7 @@
 mod interfaces;
 
 use interfaces::{{ node.struct_name }};
+use rclrs::CreateBasicExecutor as _;
 
 /// 周期処理（{{ node.period_ms }} ms ごとに呼ばれます）
 fn on_update(_io: &{{ node.struct_name }}) {

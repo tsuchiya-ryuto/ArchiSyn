@@ -3,8 +3,9 @@
 // アルゴリズムは同じディレクトリの {{ node.node_name }}.rs（実装部）に書いてください。
 #![allow(dead_code)]
 
-use std::sync::{Arc, Mutex};
-use std::time::Duration;
+use std::sync::Arc;
+{% if node.inputs %}use std::sync::Mutex;
+{% endif %}use std::time::Duration;
 
 /// {{ node.label }} のインターフェース部（自動生成）。
 /// Subscriber / Publisher / タイマ / パラメータの配線を担当します。
