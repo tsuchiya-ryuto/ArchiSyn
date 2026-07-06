@@ -279,20 +279,28 @@ Phase 4 までの MVP+多言語+抽象化を土台に、実運用で効く機能
 
 現状の「全ノードを並べる system.launch.py」を launch 設計機能に拡張する。
 
-- [ ] ノードのパラメータ値を launch の `parameters` に反映
-- [ ] namespace / ノードのグルーピング（.arcsyn スキーマ拡張）
-- [ ] 複数 launch 構成（サブシステムごとの起動セット定義と GUI での含否選択）
-- [ ] launch 引数（use_sim_time 等）の定義
+- [x] ノードのパラメータ値を launch の `parameters` に反映（2026-07-07）
+- [x] namespace（.arcsyn スキーマ拡張 + インスペクタ入力欄 + launch 出力。
+      トピックは `/<ns>/<node>/<port>` の絶対パスに統一し、namespace を跨ぐエッジでも配線を保証。
+      3言語 Docker 疎通で再検証済み）
+- [ ] 複数 launch 構成（サブシステムごとの起動セット定義と GUI での含否選択）← 5.3 の後に実施
+- [ ] launch 引数（use_sim_time 等）の定義 ← 5.3 の後に実施
 
 #### 5.3 既存コードからの逆引き .arcsyn 生成（大規模）
 
-- [ ] 段階1: ArchiSyn 生成物のリバース（interfaces.\* は構造既知のため確実にパース可能。
-      手書き変更された周期・トピックの取り込み＝ラウンドトリップ）
-- [ ] 段階2: 一般 ROS 2 パッケージの静的解析インポート
+優先順（2026-07-07 ユーザー合意: rqt_graph 方式を本命とする）:
+
+- [ ] 段階1: **実行時イントロスペクション（rqt_graph 方式）**
+  - 同梱スクリプト `introspect.py`（rclpy graph API で全ノードの Pub/Sub トピック・型・
+    パラメータを JSON ダンプ）を実行中システムの環境で実行
+  - ArchiSyn が JSON をインポート → ノード/ポート/エッジ/カスタム型を復元、
+    自動レイアウト（dagre/ELK）で `.arcsyn` 化。言語不問・手書きコードも取込可能
+  - 制約: 起動中のノードのみ。周期は直接取れない（topic hz 計測で推定可）
+- [ ] 段階2: ArchiSyn 生成物のリバース（interfaces.\* は構造既知のため確実にパース可能）
+- [ ] 段階3: 一般 ROS 2 パッケージの静的解析インポート
   - `.msg` ファイル → カスタム型（確実・価値大）
   - create_subscription / create_publisher / create_timer / declare_parameter の抽出
     （Python: ast、C++/Rust: パターンベースの近似）→ レビュー画面で確認して取込
-- （発展）実行中システムからのイントロスペクション（ros2 graph API 相当）
 
 #### 5.4 スケジューリング設計（大規模）
 
