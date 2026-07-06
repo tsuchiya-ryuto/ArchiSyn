@@ -197,6 +197,39 @@ export function NodeInspector() {
             }}
           />
         </label>
+        <label className="field">
+          <span>オフセット [ms]</span>
+          <input
+            type="number"
+            min={0}
+            value={selected.data.offsetMs}
+            title="位相オフセット（周期起点からのずれ）"
+            onChange={(e) => {
+              const v = Number(e.currentTarget.value);
+              if (Number.isFinite(v) && v >= 0) {
+                updateNodeData(selected.id, { offsetMs: v });
+              }
+            }}
+          />
+        </label>
+        <label className="field">
+          <span>WCET [ms]</span>
+          <input
+            type="number"
+            min={0}
+            step="0.1"
+            value={selected.data.wcetMs ?? ""}
+            placeholder="（未設定）"
+            title="最悪実行時間の見積り。スケジュールタブの解析に使用"
+            onChange={(e) => {
+              const raw = e.currentTarget.value;
+              const v = Number(raw);
+              updateNodeData(selected.id, {
+                wcetMs: raw === "" || !Number.isFinite(v) ? undefined : v,
+              });
+            }}
+          />
+        </label>
       </section>
 
       <PortListEditor nodeId={selected.id} dir="inputs" title="入力ポート" />

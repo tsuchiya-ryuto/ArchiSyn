@@ -34,6 +34,8 @@ fn demo_project() -> Project {
                 language: Language::Rust,
                 namespace: None,
                 period_ms: 20,
+                offset_ms: 0,
+                wcet_ms: None,
                 position: Vec2 { x: -300.0, y: 0.0 },
                 size: None,
                 inputs: vec![],
@@ -49,6 +51,8 @@ fn demo_project() -> Project {
                 language: Language::Python,
                 namespace: None,
                 period_ms: 50,
+                offset_ms: 0,
+                wcet_ms: None,
                 position: Vec2 { x: 0.0, y: 0.0 },
                 size: None,
                 inputs: vec![PortDef {
@@ -71,6 +75,8 @@ fn demo_project() -> Project {
                 language: Language::Cpp,
                 namespace: None,
                 period_ms: 100,
+                offset_ms: 0,
+                wcet_ms: None,
                 position: Vec2 { x: 300.0, y: 0.0 },
                 size: None,
                 inputs: vec![PortDef {
@@ -108,6 +114,7 @@ fn demo_project() -> Project {
                 },
             },
         ],
+        scheduling: SchedulingSettings::default(),
         launch: LaunchSettings {
             args: vec![LaunchArgDef {
                 name: "use_sim_time".to_string(),

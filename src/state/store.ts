@@ -19,6 +19,7 @@ import {
   type PortDef,
 } from "../types/arcsyn";
 import type { ProjectFile } from "../ipc/project";
+import type { SchedulingProcess } from "../utils/scheduling";
 import { fromProjectFile } from "../ipc/convert";
 
 export type ArchNode = Node<ArchNodeData, "archNode">;
@@ -36,12 +37,14 @@ type ModelState = {
   middleware: string;
   launchArgs: LaunchArg[];
   launchConfigs: LaunchConfig[];
+  schedulingProcesses: SchedulingProcess[];
   currentFilePath: string | null;
   fileStatus: string | null;
   rfInstance: ReactFlowInstance<ArchNode, Edge> | null;
 
   setLaunchArgs: (args: LaunchArg[]) => void;
   setLaunchConfigs: (configs: LaunchConfig[]) => void;
+  setSchedulingProcesses: (processes: SchedulingProcess[]) => void;
 
   setProjectName: (name: string) => void;
   setMiddleware: (middleware: string) => void;
@@ -163,12 +166,15 @@ export const useModelStore = create<ModelState>()((set, get) => ({
   middleware: "ros2_humble",
   launchArgs: [],
   launchConfigs: [],
+  schedulingProcesses: [],
   currentFilePath: null,
   fileStatus: null,
   rfInstance: null,
 
   setLaunchArgs: (args) => set({ launchArgs: args }),
   setLaunchConfigs: (configs) => set({ launchConfigs: configs }),
+  setSchedulingProcesses: (processes) =>
+    set({ schedulingProcesses: processes }),
 
   setProjectName: (name) => {
     const trimmed = name.trim();
@@ -190,6 +196,7 @@ export const useModelStore = create<ModelState>()((set, get) => ({
       middleware: file.project.middleware,
       launchArgs: file.launch?.args ?? [],
       launchConfigs: file.launch?.configs ?? [],
+      schedulingProcesses: file.scheduling?.processes ?? [],
       currentFilePath: path,
       connectionError: null,
     });
@@ -235,6 +242,7 @@ export const useModelStore = create<ModelState>()((set, get) => ({
           label: `Node${id}`,
           language: "python",
           periodMs: 100,
+          offsetMs: 0,
           inputs: [{ name: "in1", type: "std_msgs/Float64" }],
           outputs: [{ name: "out1", type: "std_msgs/Float64" }],
           params: [],

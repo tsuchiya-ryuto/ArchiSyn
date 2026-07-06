@@ -318,8 +318,11 @@ Phase 4 までの MVP+多言語+抽象化を土台に、実運用で効く機能
 - プロセス配置（composition: component container へのまとめ）
 - RT 優先度・CPU 割当
 
-- [ ] 設計ドキュメント作成（モデル拡張・GUI・解析アルゴリズム・生成物への反映）
-- [ ] 実装（設計確定後にサブフェーズへ分割）
+- [x] 設計ドキュメント作成（`doc/scheduling_design.md`。2026-07-07）
+- [x] 5.4b: モデル拡張（offset_ms / wcet_ms / scheduling.processes）+ スケジュール タブ +
+      静的解析（利用率・応答時間上界によるデッドライン検証・レート整合・チェーン最悪レイテンシ・
+      オフセット衝突ヒント・配置妥当性）。解析は vitest 9件で担保
+- [ ] 5.4c: コード生成反映（オフセット / プロセス runner / launch prefix）+ Docker 検証
 
 ---
 

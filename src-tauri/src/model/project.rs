@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use super::{CustomType, EdgeDef, LaunchSettings, NodeDef};
+use super::{CustomType, EdgeDef, LaunchSettings, NodeDef, SchedulingSettings};
 
 /// 現在サポートする .arcsyn フォーマットのバージョン
 pub const ARCSYN_VERSION: &str = "0.1";
@@ -19,6 +19,9 @@ pub struct Project {
     /// launch 設計（引数・起動構成）
     #[serde(default, skip_serializing_if = "LaunchSettings::is_empty")]
     pub launch: LaunchSettings,
+    /// スケジューリング設計（プロセス配置等。doc/scheduling_design.md）
+    #[serde(default, skip_serializing_if = "SchedulingSettings::is_empty")]
+    pub scheduling: SchedulingSettings,
     #[serde(default)]
     pub viewport: Viewport,
 }
@@ -31,6 +34,7 @@ impl Default for Project {
             custom_types: Vec::new(),
             nodes: Vec::new(),
             edges: Vec::new(),
+            scheduling: SchedulingSettings::default(),
             launch: LaunchSettings::default(),
             viewport: Viewport::default(),
         }

@@ -41,6 +41,10 @@ export type ArchNodeData = {
   /** ROS 名前空間（未指定はルート） */
   namespace?: string;
   periodMs: number;
+  /** 位相オフセット [ms] */
+  offsetMs: number;
+  /** 最悪実行時間の見積り [ms]（スケジューリング解析用） */
+  wcetMs?: number;
   inputs: PortDef[];
   outputs: PortDef[];
   params: ParamDef[];

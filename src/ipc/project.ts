@@ -5,6 +5,7 @@ import type {
   LaunchArg,
   LaunchConfig,
 } from "../types/arcsyn";
+import type { SchedulingProcess } from "../utils/scheduling";
 
 // Rust 側 model::Project と対応する .arcsyn ファイル表現（キーは snake_case）
 
@@ -18,6 +19,8 @@ export type FileNode = {
   language: Language;
   namespace?: string;
   period_ms: number;
+  offset_ms?: number;
+  wcet_ms?: number;
   position: { x: number; y: number };
   size?: { w: number; h: number };
   inputs: FilePort[];
@@ -38,6 +41,7 @@ export type ProjectFile = {
   nodes: FileNode[];
   edges: FileEdge[];
   launch?: { args?: LaunchArg[]; configs?: LaunchConfig[] };
+  scheduling?: { processes?: SchedulingProcess[] };
   viewport: { zoom: number; pan: { x: number; y: number } };
 };
 

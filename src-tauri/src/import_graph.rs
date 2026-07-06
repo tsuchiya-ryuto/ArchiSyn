@@ -8,7 +8,7 @@ use serde::Deserialize;
 use crate::codegen::{pascal_case, snake_case};
 use crate::model::{
     EdgeDef, Endpoint, Language, LaunchSettings, NodeDef, ParamDef, PortDef, Project, ProjectMeta,
-    Vec2, Viewport, ARCSYN_VERSION,
+    SchedulingSettings, Vec2, Viewport, ARCSYN_VERSION,
 };
 
 #[derive(Debug, Deserialize)]
@@ -144,6 +144,8 @@ pub fn import_graph_json(text: &str, project_name: &str) -> Result<ImportResult,
             language: Language::Python,
             namespace,
             period_ms: 100,
+            offset_ms: 0,
+            wcet_ms: None,
             position: Vec2 { x: 0.0, y: 0.0 }, // 後段のレイアウトで確定
             size: None,
             inputs,
@@ -197,6 +199,7 @@ pub fn import_graph_json(text: &str, project_name: &str) -> Result<ImportResult,
             custom_types: Vec::new(),
             nodes,
             edges,
+            scheduling: SchedulingSettings::default(),
             launch: LaunchSettings::default(),
             viewport: Viewport::default(),
         },

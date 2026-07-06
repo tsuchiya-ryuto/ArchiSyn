@@ -120,6 +120,8 @@ mod tests {
                 language: Language::Python,
                 namespace: None,
                 period_ms: 50,
+                offset_ms: 0,
+                wcet_ms: None,
                 position: Vec2 { x: 120.0, y: 200.0 },
                 size: None,
                 inputs: vec![PortDef {
@@ -147,6 +149,7 @@ mod tests {
                     port: "pose".to_string(),
                 },
             }],
+            scheduling: SchedulingSettings::default(),
             launch: LaunchSettings::default(),
             viewport: Viewport {
                 zoom: 1.5,

@@ -3,11 +3,12 @@ import "@xyflow/react/dist/style.css";
 import "./App.css";
 import { Canvas } from "./components/Canvas/Canvas";
 import { LaunchEditor } from "./components/LaunchEditor/LaunchEditor";
+import { ScheduleEditor } from "./components/ScheduleEditor/ScheduleEditor";
 import { Menu } from "./components/Menu/Menu";
 import { NodeInspector } from "./components/NodeInspector/NodeInspector";
 import { TypeEditor } from "./components/TypeEditor/TypeEditor";
 
-type SidebarTab = "node" | "types" | "launch";
+type SidebarTab = "node" | "types" | "launch" | "schedule";
 
 function App() {
   const [tab, setTab] = useState<SidebarTab>("node");
@@ -37,11 +38,18 @@ function App() {
             >
               Launch
             </button>
+            <button
+              className={tab === "schedule" ? "active" : ""}
+              onClick={() => setTab("schedule")}
+            >
+              スケジュール
+            </button>
           </div>
           <div className="sidebar-body">
             {tab === "node" && <NodeInspector />}
             {tab === "types" && <TypeEditor />}
             {tab === "launch" && <LaunchEditor />}
+            {tab === "schedule" && <ScheduleEditor />}
           </div>
         </aside>
       </div>

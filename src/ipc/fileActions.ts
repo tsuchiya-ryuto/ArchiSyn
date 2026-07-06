@@ -23,6 +23,7 @@ function snapshot() {
     middleware: s.middleware,
     launchArgs: s.launchArgs,
     launchConfigs: s.launchConfigs,
+    schedulingProcesses: s.schedulingProcesses,
     viewport: s.rfInstance?.getViewport() ?? { x: 0, y: 0, zoom: 1 },
   });
 }

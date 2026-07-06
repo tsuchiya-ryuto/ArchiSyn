@@ -41,7 +41,9 @@ await moveNode("Node3", 800, 350);
 
 // --- ラベルを変更 ---
 async function rename(oldLabel, newLabel) {
-  await page.click(`.react-flow__node:has-text("${oldLabel}") .arch-node-header`);
+  await page.click(
+    `.react-flow__node:has-text("${oldLabel}") .arch-node-header`,
+  );
   await sleep(400);
   const input = page
     .locator('.field:has-text("ラベル")')
@@ -58,10 +60,14 @@ await rename("Node3", "Controller");
 
 // --- ポート型を検索して設定（ImuDriver の出力 / SensorFusion の入力）---
 async function setPortType(nodeLabel, section, query, pick) {
-  await page.click(`.react-flow__node:has-text("${nodeLabel}") .arch-node-header`);
+  await page.click(
+    `.react-flow__node:has-text("${nodeLabel}") .arch-node-header`,
+  );
   await sleep(400);
   const input = page
-    .locator(`section.inspector-section:has(h3:text("${section}")) .type-search input`)
+    .locator(
+      `section.inspector-section:has(h3:text("${section}")) .type-search input`,
+    )
     .first();
   await input.click();
   await input.fill(query);
@@ -75,10 +81,14 @@ await setPortType("SensorFusion", "入力ポート", "imu", "sensor_msgs/Imu");
 // --- 接続（型が一致するので繋がる）---
 async function connect(fromLabel, toLabel) {
   const src = page
-    .locator(`.react-flow__node:has-text("${fromLabel}") .port-row-out .port-handle`)
+    .locator(
+      `.react-flow__node:has-text("${fromLabel}") .port-row-out .port-handle`,
+    )
     .first();
   const dst = page
-    .locator(`.react-flow__node:has-text("${toLabel}") .port-row-in .port-handle`)
+    .locator(
+      `.react-flow__node:has-text("${toLabel}") .port-row-in .port-handle`,
+    )
     .first();
   const a = await src.boundingBox();
   const b = await dst.boundingBox();

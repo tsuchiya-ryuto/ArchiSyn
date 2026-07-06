@@ -1,5 +1,6 @@
 import type { Edge } from "@xyflow/react";
 import type { CustomType, LaunchArg, LaunchConfig } from "../types/arcsyn";
+import type { SchedulingProcess } from "../utils/scheduling";
 import type { ArchNode } from "../state/store";
 import type { FileEdge, FileNode, ProjectFile } from "./project";
 
@@ -13,6 +14,7 @@ type ModelSnapshot = {
   middleware: string;
   launchArgs: LaunchArg[];
   launchConfigs: LaunchConfig[];
+  schedulingProcesses: SchedulingProcess[];
   viewport: { x: number; y: number; zoom: number };
 };
 
@@ -26,6 +28,7 @@ export function toProjectFile(snapshot: ModelSnapshot): ProjectFile {
     nodes: snapshot.nodes.map(toFileNode),
     edges: snapshot.edges.map(toFileEdge),
     launch: { args: snapshot.launchArgs, configs: snapshot.launchConfigs },
+    scheduling: { processes: snapshot.schedulingProcesses },
     viewport: {
       zoom: Math.round(snapshot.viewport.zoom * 100) / 100,
       pan: {
@@ -50,6 +53,8 @@ function toFileNode(node: ArchNode): FileNode {
     language: node.data.language,
     ...(node.data.namespace ? { namespace: node.data.namespace } : {}),
     period_ms: node.data.periodMs,
+    ...(node.data.offsetMs ? { offset_ms: node.data.offsetMs } : {}),
+    ...(node.data.wcetMs !== undefined ? { wcet_ms: node.data.wcetMs } : {}),
     position: {
       x: Math.round(node.position.x),
       y: Math.round(node.position.y),
@@ -84,6 +89,8 @@ export function fromProjectFile(file: ProjectFile): {
       language: n.language,
       namespace: n.namespace,
       periodMs: n.period_ms,
+      offsetMs: n.offset_ms ?? 0,
+      wcetMs: n.wcet_ms,
       inputs: n.inputs,
       outputs: n.outputs,
       params: n.params,

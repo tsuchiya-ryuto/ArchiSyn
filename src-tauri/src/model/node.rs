@@ -2,12 +2,22 @@ use serde::{Deserialize, Serialize};
 
 use super::Vec2;
 
+fn is_zero(v: &u32) -> bool {
+    *v == 0
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct NodeDef {
     pub id: String,
     pub label: String,
     pub language: Language,
     pub period_ms: u32,
+    /// 位相オフセット [ms]（周期起点からのずれ。省略時 0）
+    #[serde(default, skip_serializing_if = "is_zero")]
+    pub offset_ms: u32,
+    /// 最悪実行時間の見積り [ms]（スケジューリング解析に使用）
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub wcet_ms: Option<f64>,
     /// ROS 名前空間（例: "front"）。未指定はルート
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub namespace: Option<String>,

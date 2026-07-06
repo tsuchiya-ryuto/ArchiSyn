@@ -33,6 +33,8 @@ fn demo_project() -> Project {
                 language: Language::Python,
                 namespace: None,
                 period_ms: 50,
+                offset_ms: 0,
+                wcet_ms: None,
                 position: Vec2 { x: 0.0, y: 0.0 },
                 size: None,
                 inputs: vec![PortDef {
@@ -55,6 +57,8 @@ fn demo_project() -> Project {
                 language: Language::Python,
                 namespace: None,
                 period_ms: 100,
+                offset_ms: 0,
+                wcet_ms: None,
                 position: Vec2 { x: 300.0, y: 0.0 },
                 size: None,
                 inputs: vec![PortDef {
@@ -79,6 +83,7 @@ fn demo_project() -> Project {
                 port: "pose".to_string(),
             },
         }],
+        scheduling: SchedulingSettings::default(),
         launch: LaunchSettings::default(),
         viewport: Viewport::default(),
     }

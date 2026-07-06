@@ -280,6 +280,59 @@ button:hover {
   font-weight: 600;
 }
 
+/* ---------- スケジュールタブ ---------- */
+
+.sched-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  margin-bottom: 10px;
+}
+
+.sched-table th,
+.sched-table td {
+  border-bottom: 1px solid #e2e6ee;
+  padding: 3px 6px;
+  text-align: left;
+}
+
+.sched-table th {
+  color: #556;
+  font-weight: 600;
+}
+
+.sched-node-meta {
+  color: #889;
+  font-size: 11px;
+}
+
+.sched-finding {
+  font-size: 12px;
+  margin: 3px 0;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.sched-error {
+  background: #fdecea;
+  color: #a33;
+}
+
+.sched-warn {
+  background: #fff6e0;
+  color: #875f00;
+}
+
+.sched-info {
+  background: #eef4ff;
+  color: #345;
+}
+
+.sched-hint {
+  background: #f0f7f0;
+  color: #2d6a2d;
+}
+
 /* ---------- 型検索フィールド ---------- */
 
 .type-search {
