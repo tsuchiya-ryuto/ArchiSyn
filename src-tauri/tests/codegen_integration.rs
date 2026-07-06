@@ -79,6 +79,7 @@ fn demo_project() -> Project {
                 port: "pose".to_string(),
             },
         }],
+        launch: LaunchSettings::default(),
         viewport: Viewport::default(),
     }
 }
@@ -398,4 +399,47 @@ fn launch_includes_namespace_and_parameters() {
         controller.contains("\"/front/sensor_fusion/fused\""),
         "{controller}"
     );
+}
+
+#[test]
+fn launch_args_and_configs_generate_multiple_launch_files() {
+    let mut project = demo_project();
+    project.launch = LaunchSettings {
+        args: vec![LaunchArgDef {
+            name: "use_sim_time".to_string(),
+            default: "false".to_string(),
+        }],
+        configs: vec![
+            LaunchConfigDef {
+                name: "Sensors".to_string(),
+                nodes: vec!["n1".to_string()],
+            },
+            LaunchConfigDef {
+                name: "empty".to_string(),
+                nodes: vec!["nx".to_string()], // 存在しない id
+            },
+        ],
+    };
+
+    let ws = generate_workspace(&project).unwrap();
+    let paths: Vec<String> = ws
+        .files
+        .iter()
+        .map(|f| f.rel_path.to_string_lossy().to_string())
+        .collect();
+    assert!(paths.contains(&"launch/system.launch.py".to_string()));
+    assert!(paths.contains(&"launch/sensors.launch.py".to_string()));
+    assert!(!paths.contains(&"launch/empty.launch.py".to_string()));
+    assert!(ws.warnings.iter().any(|w| w.contains("empty")));
+
+    // 引数の宣言と全ノードへのパラメータ受け渡し
+    let system = content_of(&ws.files, "launch/system.launch.py");
+    assert!(system.contains("DeclareLaunchArgument(\"use_sim_time\", default_value=\"false\")"));
+    assert!(system.contains("\"use_sim_time\": LaunchConfiguration(\"use_sim_time\")"));
+    assert!(system.contains("\"alpha\": 0.7"));
+
+    // 構成 launch には選択ノードのみ
+    let sensors = content_of(&ws.files, "launch/sensors.launch.py");
+    assert!(sensors.contains("executable=\"sensor_fusion\""));
+    assert!(!sensors.contains("executable=\"controller\""));
 }

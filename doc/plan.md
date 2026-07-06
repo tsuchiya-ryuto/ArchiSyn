@@ -283,8 +283,10 @@ Phase 4 までの MVP+多言語+抽象化を土台に、実運用で効く機能
 - [x] namespace（.arcsyn スキーマ拡張 + インスペクタ入力欄 + launch 出力。
       トピックは `/<ns>/<node>/<port>` の絶対パスに統一し、namespace を跨ぐエッジでも配線を保証。
       3言語 Docker 疎通で再検証済み）
-- [ ] 複数 launch 構成（サブシステムごとの起動セット定義と GUI での含否選択）← 5.3 の後に実施
-- [ ] launch 引数（use_sim_time 等）の定義 ← 5.3 の後に実施
+- [x] 複数 launch 構成（`launch.configs`。構成ごとに `launch/<名前>.launch.py` を生成、GUI の Launch タブでノード含否をチェック選択。2026-07-07）
+- [x] launch 引数（`launch.args`。DeclareLaunchArgument として宣言し全ノードに同名パラメータとして受け渡し。2026-07-07）
+
+**5.2 完了（2026-07-07）**
 
 #### 5.3 既存コードからの逆引き .arcsyn 生成（大規模）
 

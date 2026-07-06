@@ -2,11 +2,12 @@ import { useState } from "react";
 import "@xyflow/react/dist/style.css";
 import "./App.css";
 import { Canvas } from "./components/Canvas/Canvas";
+import { LaunchEditor } from "./components/LaunchEditor/LaunchEditor";
 import { Menu } from "./components/Menu/Menu";
 import { NodeInspector } from "./components/NodeInspector/NodeInspector";
 import { TypeEditor } from "./components/TypeEditor/TypeEditor";
 
-type SidebarTab = "node" | "types";
+type SidebarTab = "node" | "types" | "launch";
 
 function App() {
   const [tab, setTab] = useState<SidebarTab>("node");
@@ -30,9 +31,17 @@ function App() {
             >
               型
             </button>
+            <button
+              className={tab === "launch" ? "active" : ""}
+              onClick={() => setTab("launch")}
+            >
+              Launch
+            </button>
           </div>
           <div className="sidebar-body">
-            {tab === "node" ? <NodeInspector /> : <TypeEditor />}
+            {tab === "node" && <NodeInspector />}
+            {tab === "types" && <TypeEditor />}
+            {tab === "launch" && <LaunchEditor />}
           </div>
         </aside>
       </div>

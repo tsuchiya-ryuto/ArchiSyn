@@ -14,6 +14,8 @@ import {
   isTypeCompatible,
   type ArchNodeData,
   type CustomType,
+  type LaunchArg,
+  type LaunchConfig,
   type PortDef,
 } from "../types/arcsyn";
 import type { ProjectFile } from "../ipc/project";
@@ -32,9 +34,14 @@ type ModelState = {
 
   projectName: string;
   middleware: string;
+  launchArgs: LaunchArg[];
+  launchConfigs: LaunchConfig[];
   currentFilePath: string | null;
   fileStatus: string | null;
   rfInstance: ReactFlowInstance<ArchNode, Edge> | null;
+
+  setLaunchArgs: (args: LaunchArg[]) => void;
+  setLaunchConfigs: (configs: LaunchConfig[]) => void;
 
   setProjectName: (name: string) => void;
   setMiddleware: (middleware: string) => void;
@@ -154,9 +161,14 @@ export const useModelStore = create<ModelState>()((set, get) => ({
 
   projectName: "my_project",
   middleware: "ros2_humble",
+  launchArgs: [],
+  launchConfigs: [],
   currentFilePath: null,
   fileStatus: null,
   rfInstance: null,
+
+  setLaunchArgs: (args) => set({ launchArgs: args }),
+  setLaunchConfigs: (configs) => set({ launchConfigs: configs }),
 
   setProjectName: (name) => {
     const trimmed = name.trim();
@@ -176,6 +188,8 @@ export const useModelStore = create<ModelState>()((set, get) => ({
       nextId: nextIdAfter(nodes),
       projectName: file.project.name,
       middleware: file.project.middleware,
+      launchArgs: file.launch?.args ?? [],
+      launchConfigs: file.launch?.configs ?? [],
       currentFilePath: path,
       connectionError: null,
     });

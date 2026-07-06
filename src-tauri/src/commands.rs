@@ -147,6 +147,7 @@ mod tests {
                     port: "pose".to_string(),
                 },
             }],
+            launch: LaunchSettings::default(),
             viewport: Viewport {
                 zoom: 1.5,
                 pan: Vec2 { x: -30.0, y: 12.0 },

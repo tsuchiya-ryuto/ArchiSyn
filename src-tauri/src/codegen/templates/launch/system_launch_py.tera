@@ -1,20 +1,24 @@
 # 自動生成ファイル — ArchiSyn が生成する launch ファイルです。
 # コード生成のたびに上書きされるため、編集しないでください。
 from launch import LaunchDescription
-from launch_ros.actions import Node
+{% if args %}from launch.actions import DeclareLaunchArgument
+from launch.substitutions import LaunchConfiguration
+{% endif %}from launch_ros.actions import Node
 
 
 def generate_launch_description() -> LaunchDescription:
     return LaunchDescription(
         [
-{% for n in nodes %}            Node(
+{% for a in args %}            DeclareLaunchArgument("{{ a.name }}", default_value="{{ a.default }}"),
+{% endfor %}{% for n in nodes %}            Node(
                 package="{{ n.pkg }}",
                 executable="{{ n.node_name }}",
                 name="{{ n.node_name }}",
 {% if n.namespace %}                namespace="{{ n.namespace }}",
-{% endif %}{% if n.params %}                parameters=[
+{% endif %}{% if n.params or args %}                parameters=[
                     {
 {% for p in n.params %}                        "{{ p.name }}": {{ p.value }},
+{% endfor %}{% for a in args %}                        "{{ a.name }}": LaunchConfiguration("{{ a.name }}"),
 {% endfor %}                    }
                 ],
 {% endif %}                output="screen",

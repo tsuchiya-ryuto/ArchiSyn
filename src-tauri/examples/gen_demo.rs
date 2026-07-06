@@ -108,6 +108,16 @@ fn demo_project() -> Project {
                 },
             },
         ],
+        launch: LaunchSettings {
+            args: vec![LaunchArgDef {
+                name: "use_sim_time".to_string(),
+                default: "false".to_string(),
+            }],
+            configs: vec![LaunchConfigDef {
+                name: "sensors".to_string(),
+                nodes: vec!["n0".to_string(), "n1".to_string()],
+            }],
+        },
         viewport: Viewport::default(),
     }
 }

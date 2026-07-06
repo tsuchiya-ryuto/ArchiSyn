@@ -1,5 +1,5 @@
 import type { Edge } from "@xyflow/react";
-import type { CustomType } from "../types/arcsyn";
+import type { CustomType, LaunchArg, LaunchConfig } from "../types/arcsyn";
 import type { ArchNode } from "../state/store";
 import type { FileEdge, FileNode, ProjectFile } from "./project";
 
@@ -11,6 +11,8 @@ type ModelSnapshot = {
   customTypes: CustomType[];
   projectName: string;
   middleware: string;
+  launchArgs: LaunchArg[];
+  launchConfigs: LaunchConfig[];
   viewport: { x: number; y: number; zoom: number };
 };
 
@@ -23,6 +25,7 @@ export function toProjectFile(snapshot: ModelSnapshot): ProjectFile {
     custom_types: snapshot.customTypes,
     nodes: snapshot.nodes.map(toFileNode),
     edges: snapshot.edges.map(toFileEdge),
+    launch: { args: snapshot.launchArgs, configs: snapshot.launchConfigs },
     viewport: {
       zoom: Math.round(snapshot.viewport.zoom * 100) / 100,
       pan: {

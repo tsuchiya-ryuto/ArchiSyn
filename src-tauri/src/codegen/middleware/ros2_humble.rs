@@ -53,7 +53,7 @@ impl MiddlewareAdapter for Ros2HumbleAdapter {
             Box::new(CppGenerator),
             Box::new(RustGenerator),
         ];
-        let mut launch_nodes: Vec<tera::Value> = Vec::new();
+        let mut launch_nodes: Vec<(String, tera::Value)> = Vec::new(); // (node_id, entry)
 
         for generator in &generators {
             let nodes: Vec<_> = project
@@ -90,7 +90,7 @@ impl MiddlewareAdapter for Ros2HumbleAdapter {
                     }
                 }
                 m.insert("params".into(), tera::Value::Array(params));
-                launch_nodes.push(tera::Value::Object(m));
+                launch_nodes.push((node.id.clone(), tera::Value::Object(m)));
             }
         }
 
@@ -102,9 +102,52 @@ impl MiddlewareAdapter for Ros2HumbleAdapter {
             );
         }
 
-        // launch ファイル
+        // launch ファイル（system = 全ノード + 起動構成ごとの launch）
         if !launch_nodes.is_empty() {
-            ws.files.extend(self.launch_files(&launch_nodes)?);
+            let args: Vec<tera::Value> = project
+                .launch
+                .args
+                .iter()
+                .map(|a| {
+                    let mut m = tera::Map::new();
+                    m.insert("name".into(), tera::Value::String(a.name.clone()));
+                    m.insert("default".into(), tera::Value::String(a.default.clone()));
+                    tera::Value::Object(m)
+                })
+                .collect();
+
+            let all: Vec<tera::Value> = launch_nodes.iter().map(|(_, v)| v.clone()).collect();
+            ws.files.push(self.launch_file("system", &all, &args)?);
+
+            for config in &project.launch.configs {
+                let name = snake_case(&config.name);
+                if name == "system" {
+                    ws.warnings
+                        .push("起動構成名 system は予約されているためスキップしました".to_string());
+                    continue;
+                }
+                for id in &config.nodes {
+                    if !launch_nodes.iter().any(|(node_id, _)| node_id == id) {
+                        ws.warnings.push(format!(
+                            "起動構成「{}」のノード {id} が見つかりません（未生成の言語の可能性）",
+                            config.name
+                        ));
+                    }
+                }
+                let selected: Vec<tera::Value> = launch_nodes
+                    .iter()
+                    .filter(|(id, _)| config.nodes.contains(id))
+                    .map(|(_, v)| v.clone())
+                    .collect();
+                if selected.is_empty() {
+                    ws.warnings.push(format!(
+                        "起動構成「{}」にノードが無いためスキップしました",
+                        config.name
+                    ));
+                    continue;
+                }
+                ws.files.push(self.launch_file(&name, &selected, &args)?);
+            }
         }
 
         Ok(ws)
@@ -204,17 +247,24 @@ impl Ros2HumbleAdapter {
         Ok(files)
     }
 
-    /// 全ノードを起動する launch ファイルを生成する
-    /// （nodes: pkg / node_name / namespace? / params を持つ Tera オブジェクト列）
-    fn launch_files(&self, nodes: &[tera::Value]) -> Result<Vec<GeneratedFile>, String> {
+    /// launch ファイルを1つ生成する
+    /// （nodes: pkg / node_name / namespace? / params を持つ Tera オブジェクト列、
+    ///   args: launch 引数。全ノードに同名パラメータとして渡される）
+    fn launch_file(
+        &self,
+        name: &str,
+        nodes: &[tera::Value],
+        args: &[tera::Value],
+    ) -> Result<GeneratedFile, String> {
         let mut ctx = Context::new();
         ctx.insert("nodes", nodes);
-        Ok(vec![GeneratedFile {
-            rel_path: PathBuf::from("launch").join("system.launch.py"),
+        ctx.insert("args", args);
+        Ok(GeneratedFile {
+            rel_path: PathBuf::from("launch").join(format!("{name}.launch.py")),
             content: templates()
                 .render("launch/system_launch_py.tera", &ctx)
                 .map_err(|e| format!("launch ファイルの生成に失敗: {e}"))?,
             protected: false,
-        }])
+        })
     }
 }

@@ -148,6 +148,20 @@ body,
   padding: 12px;
 }
 
+.sidebar-hint {
+  font-size: 11px;
+  color: #889;
+  margin: 0 0 6px;
+}
+
+.launch-node-check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  padding: 2px 0;
+}
+
 .sidebar-empty {
   color: #889;
   font-size: 13px;

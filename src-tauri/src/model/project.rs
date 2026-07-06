@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use super::{CustomType, EdgeDef, NodeDef};
+use super::{CustomType, EdgeDef, LaunchSettings, NodeDef};
 
 /// 現在サポートする .arcsyn フォーマットのバージョン
 pub const ARCSYN_VERSION: &str = "0.1";
@@ -16,6 +16,9 @@ pub struct Project {
     pub nodes: Vec<NodeDef>,
     #[serde(default)]
     pub edges: Vec<EdgeDef>,
+    /// launch 設計（引数・起動構成）
+    #[serde(default, skip_serializing_if = "LaunchSettings::is_empty")]
+    pub launch: LaunchSettings,
     #[serde(default)]
     pub viewport: Viewport,
 }
@@ -28,6 +31,7 @@ impl Default for Project {
             custom_types: Vec::new(),
             nodes: Vec::new(),
             edges: Vec::new(),
+            launch: LaunchSettings::default(),
             viewport: Viewport::default(),
         }
     }

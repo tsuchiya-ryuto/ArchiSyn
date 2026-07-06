@@ -24,6 +24,17 @@ export type CustomType = {
   fields: TypeField[];
 };
 
+export type LaunchArg = {
+  name: string;
+  default: string;
+};
+
+export type LaunchConfig = {
+  name: string;
+  /** 含めるノードの id */
+  nodes: string[];
+};
+
 export type ArchNodeData = {
   label: string;
   language: Language;

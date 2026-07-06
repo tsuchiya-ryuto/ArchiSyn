@@ -21,6 +21,8 @@ function snapshot() {
     customTypes: s.customTypes,
     projectName: s.projectName,
     middleware: s.middleware,
+    launchArgs: s.launchArgs,
+    launchConfigs: s.launchConfigs,
     viewport: s.rfInstance?.getViewport() ?? { x: 0, y: 0, zoom: 1 },
   });
 }

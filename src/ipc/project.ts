@@ -1,5 +1,10 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { CustomType, Language } from "../types/arcsyn";
+import type {
+  CustomType,
+  Language,
+  LaunchArg,
+  LaunchConfig,
+} from "../types/arcsyn";
 
 // Rust 側 model::Project と対応する .arcsyn ファイル表現（キーは snake_case）
 
@@ -32,6 +37,7 @@ export type ProjectFile = {
   custom_types: CustomType[];
   nodes: FileNode[];
   edges: FileEdge[];
+  launch?: { args?: LaunchArg[]; configs?: LaunchConfig[] };
   viewport: { zoom: number; pan: { x: number; y: number } };
 };
 
