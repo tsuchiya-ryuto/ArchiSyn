@@ -4,7 +4,7 @@ use std::path::PathBuf;
 use tera::{Context, Map, Value};
 
 use crate::codegen::{pascal_case, snake_case, templates, GeneratedFile};
-use crate::model::{Language, NodeDef, ParamDef, Project};
+use crate::model::{ExecutorKind, Language, NodeDef, ParamDef, Project};
 
 use super::{GenContext, LanguageGenerator};
 
@@ -99,6 +99,11 @@ impl LanguageGenerator for PythonGenerator {
                 Value::String(format_period_s(node.period_ms)),
             );
             node_ctx.insert("period_ms".into(), Value::from(node.period_ms));
+            node_ctx.insert("offset_ms".into(), Value::from(node.offset_ms));
+            node_ctx.insert(
+                "offset_s".into(),
+                Value::String(format_period_s(node.offset_ms)),
+            );
             node_ctx.insert("inputs".into(), Value::Array(inputs));
             node_ctx.insert("outputs".into(), Value::Array(outputs));
             node_ctx.insert("params".into(), Value::Array(params));
@@ -150,12 +155,66 @@ impl LanguageGenerator for PythonGenerator {
             protected: false,
         });
 
+        // プロセス runner（スケジューリング設計: 全メンバーが Python の
+        // 複数ノードプロセスを 1 executor で実行する）
+        let mut process_entries: Vec<Value> = Vec::new();
+        for proc in &ctx.project.scheduling.processes {
+            let members: Vec<&&NodeDef> = proc
+                .nodes
+                .iter()
+                .filter_map(|id| nodes.iter().find(|n| n.id == *id))
+                .collect();
+            if members.len() < 2 || members.len() != proc.nodes.len() {
+                continue; // 統合対象外（単独 / Python 以外を含む）は launch 側で処理
+            }
+            let entry = format!("process_{}", snake_case(&proc.name));
+            let runner_nodes: Vec<Value> = members
+                .iter()
+                .map(|n| {
+                    let mut m = Map::new();
+                    m.insert(
+                        "node_name".into(),
+                        Value::String(ctx.node_names[&n.id].clone()),
+                    );
+                    m.insert("class_name".into(), Value::String(pascal_case(&n.label)));
+                    Value::Object(m)
+                })
+                .collect();
+            let mut rctx = Context::new();
+            rctx.insert("name", &proc.name);
+            rctx.insert("pkg", &pkg);
+            rctx.insert(
+                "executor_class",
+                match proc.executor {
+                    ExecutorKind::Single => "SingleThreadedExecutor",
+                    ExecutorKind::Multi => "MultiThreadedExecutor",
+                },
+            );
+            if proc.executor == ExecutorKind::Multi {
+                if let Some(threads) = proc.threads {
+                    rctx.insert("threads", &threads);
+                }
+            }
+            rctx.insert("nodes", &runner_nodes);
+            files.push(GeneratedFile {
+                rel_path: module_root.join(format!("{entry}.py")),
+                content: templates()
+                    .render("python/process_runner.tera", &rctx)
+                    .map_err(|e| format!("プロセス runner の生成に失敗: {e}"))?,
+                protected: false,
+            });
+            let mut e = Map::new();
+            e.insert("entry".into(), Value::String(entry));
+            process_entries.push(Value::Object(e));
+        }
+
         // パッケージメタデータ
         let mut pctx = Context::new();
         pctx.insert("pkg", &pkg);
         pctx.insert("project_name", &ctx.project.project.name);
         pctx.insert("deps", &dep_pkgs.iter().collect::<Vec<_>>());
         pctx.insert("nodes", &entry_points);
+        pctx.insert("process_entries", &process_entries);
         files.push(GeneratedFile {
             rel_path: root.join("package.xml"),
             content: templates()

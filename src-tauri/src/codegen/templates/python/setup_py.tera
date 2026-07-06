@@ -20,6 +20,7 @@ setup(
     entry_points={
         "console_scripts": [
 {% for n in nodes %}            "{{ n.node_name }} = " + package_name + ".{{ n.node_name }}.{{ n.node_name }}:main",
+{% endfor %}{% for p in process_entries %}            "{{ p.entry }} = " + package_name + ".{{ p.entry }}:main",
 {% endfor %}        ],
     },
 )

@@ -1,0 +1,29 @@
+# 自動生成ファイル — プロセス「{{ name }}」のランナーです。
+# コード生成のたびに上書きされるため、編集しないでください。
+# 複数ノードを 1 プロセスの {{ executor_class }} で実行します（スケジューリング設計）。
+import rclpy
+from rclpy.executors import {{ executor_class }}
+
+{% for n in nodes %}from {{ pkg }}.{{ n.node_name }}.{{ n.node_name }} import {{ n.class_name }}
+{% endfor %}
+
+def main(args=None) -> None:
+    rclpy.init(args=args)
+    executor = {{ executor_class }}({% if threads %}num_threads={{ threads }}{% endif %})
+    nodes = [
+{% for n in nodes %}        {{ n.class_name }}(),
+{% endfor %}    ]
+    for node in nodes:
+        executor.add_node(node)
+    try:
+        executor.spin()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        for node in nodes:
+            node.destroy_node()
+        rclpy.shutdown()
+
+
+if __name__ == "__main__":
+    main()

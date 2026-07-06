@@ -29,9 +29,16 @@ public:
         on_{{ i.name }}(msg);
       });
 {% endfor %}{% for o in node.outputs %}    {{ o.name }}_pub_ = this->create_publisher<{{ o.cpp_type }}>("{{ o.topic }}", 10);
-{% endfor %}    timer_ = this->create_wall_timer(
+{% endfor %}{% if node.offset_ms > 0 %}    // 位相オフセット: {{ node.offset_ms }} ms 後に周期実行を開始
+    offset_timer_ = this->create_wall_timer(
+      std::chrono::milliseconds({{ node.offset_ms }}), [this] {
+        offset_timer_->cancel();
+        timer_ = this->create_wall_timer(
+          std::chrono::milliseconds({{ node.period_ms }}), [this] { on_update(); });
+      });
+{% else %}    timer_ = this->create_wall_timer(
       std::chrono::milliseconds({{ node.period_ms }}), [this] { on_update(); });
-  }
+{% endif %}  }
 
   ~{{ node.class_base }}() override = default;
 
@@ -52,7 +59,8 @@ protected:
 private:
 {% for i in node.inputs %}  rclcpp::Subscription<{{ i.cpp_type }}>::SharedPtr {{ i.name }}_sub_;
 {% endfor %}{% for o in node.outputs %}  rclcpp::Publisher<{{ o.cpp_type }}>::SharedPtr {{ o.name }}_pub_;
-{% endfor %}  rclcpp::TimerBase::SharedPtr timer_;
+{% endfor %}{% if node.offset_ms > 0 %}  rclcpp::TimerBase::SharedPtr offset_timer_;
+{% endif %}  rclcpp::TimerBase::SharedPtr timer_;
 };
 
 }  // namespace {{ pkg }}

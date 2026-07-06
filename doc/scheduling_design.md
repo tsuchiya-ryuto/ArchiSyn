@@ -91,7 +91,12 @@ scheduling:
 
 - [x] 5.4a 本ドキュメント（2026-07-07）
 - [x] 5.4b モデル拡張 + スケジュール タブ + 静的解析（A〜G。D はチェーン解析に包含。2026-07-07）
-- [ ] 5.4c コード生成反映（オフセット / プロセス runner / launch prefix）+ Docker 検証
+- [x] 5.4c コード生成反映（2026-07-07）
+  - オフセット: Python/C++ はワンショット→周期タイマ、Rust は spin 前 sleep、mock はスレッド開始時 sleep
+  - プロセス統合: 全メンバー Python のプロセスは `process_<name>.py`（Single/MultiThreadedExecutor）に統合
+    （launch では name 指定なしの単一エントリ。ノード個別パラメータは既定値使用の警告）
+  - RT prefix: priority / cpu_affinity から `chrt -f` / `taskset -c` を launch prefix に付与
+  - Docker 検証済: 2ノードが単一プロセスで起動し（ros2 node list に両方、PID は1つ）、疎通確認
 - [ ] （将来）実測 WCET の取り込み（トレースから wcet_ms を更新）、厳密な応答時間解析
 
 ---

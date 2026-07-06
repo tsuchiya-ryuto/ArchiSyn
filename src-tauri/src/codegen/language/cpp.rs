@@ -94,6 +94,7 @@ impl LanguageGenerator for CppGenerator {
             node_ctx.insert("class_base".into(), Value::String(class_base.clone()));
             node_ctx.insert("class_name".into(), Value::String(pascal_case(&node.label)));
             node_ctx.insert("period_ms".into(), Value::from(node.period_ms));
+            node_ctx.insert("offset_ms".into(), Value::from(node.offset_ms));
             node_ctx.insert("inputs".into(), Value::Array(inputs));
             node_ctx.insert("outputs".into(), Value::Array(outputs));
             node_ctx.insert("params".into(), Value::Array(params));

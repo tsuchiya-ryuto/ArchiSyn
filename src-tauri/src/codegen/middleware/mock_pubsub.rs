@@ -94,6 +94,7 @@ impl MiddlewareAdapter for MockPubSubAdapter {
             node_ctx.insert("class_base".into(), Value::String(class_base));
             node_ctx.insert("class_name".into(), Value::String(pascal_case(&node.label)));
             node_ctx.insert("period_ms".into(), Value::from(node.period_ms));
+            node_ctx.insert("offset_ms".into(), Value::from(node.offset_ms));
             node_ctx.insert("inputs".into(), Value::Array(ports(&node.inputs, true)));
             node_ctx.insert("outputs".into(), Value::Array(ports(&node.outputs, false)));
             node_ctx.insert("params".into(), Value::Array(params));

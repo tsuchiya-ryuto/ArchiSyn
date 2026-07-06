@@ -102,6 +102,9 @@ impl MiddlewareAdapter for Ros2HumbleAdapter {
             );
         }
 
+        // スケジューリング設計の反映（プロセス統合 + RT prefix）
+        self.apply_scheduling(project, &node_names, &mut launch_nodes, &mut ws.warnings);
+
         // launch ファイル（system = 全ノード + 起動構成ごとの launch）
         if !launch_nodes.is_empty() {
             let args: Vec<tera::Value> = project
@@ -247,6 +250,71 @@ impl Ros2HumbleAdapter {
         Ok(files)
     }
 
+    /// スケジューリング設計を launch エントリへ反映する。
+    /// - 全メンバーが Python の複数ノードプロセス → runner（process_<name>）1エントリに統合
+    /// - それ以外のプロセス → 個別起動のまま RT prefix（chrt / taskset）を付与
+    fn apply_scheduling(
+        &self,
+        project: &Project,
+        node_names: &std::collections::HashMap<String, String>,
+        launch_nodes: &mut Vec<(String, tera::Value)>,
+        warnings: &mut Vec<String>,
+    ) {
+        let py_pkg = PythonGenerator.package_name(project);
+        for proc in &project.scheduling.processes {
+            let prefix = build_rt_prefix(proc);
+            let members: Vec<&crate::model::NodeDef> = proc
+                .nodes
+                .iter()
+                .filter_map(|id| project.nodes.iter().find(|n| n.id == *id))
+                .collect();
+            let all_python = members.iter().all(|n| n.language == Language::Python)
+                && members.len() == proc.nodes.len();
+
+            if members.len() >= 2 && all_python {
+                // 統合: メンバーのエントリを取り除き runner を追加
+                if members.iter().any(|n| !n.params.is_empty()) {
+                    warnings.push(format!(
+                        "プロセス「{}」は統合起動のため、ノード個別のパラメータはコード内の既定値を使用します",
+                        proc.name
+                    ));
+                }
+                launch_nodes.retain(|(id, _)| !proc.nodes.contains(id));
+                let mut m = tera::Map::new();
+                m.insert("pkg".into(), tera::Value::String(py_pkg.clone()));
+                m.insert(
+                    "node_name".into(),
+                    tera::Value::String(format!("process_{}", snake_case(&proc.name))),
+                );
+                m.insert("params".into(), tera::Value::Array(Vec::new()));
+                // Node(name=...) はプロセス内の全ノードをリネームしてしまうため
+                // 統合 runner では name を指定しない
+                m.insert("no_rename".into(), tera::Value::Bool(true));
+                if let Some(pfx) = &prefix {
+                    m.insert("prefix".into(), tera::Value::String(pfx.clone()));
+                }
+                launch_nodes.push((format!("__proc_{}", proc.name), tera::Value::Object(m)));
+            } else {
+                if members.len() >= 2 {
+                    warnings.push(format!(
+                        "プロセス「{}」は Python 以外のノードを含むため統合されません（個別起動 + prefix のみ適用）",
+                        proc.name
+                    ));
+                }
+                if let Some(pfx) = &prefix {
+                    for (id, entry) in launch_nodes.iter_mut() {
+                        if proc.nodes.contains(id) {
+                            if let tera::Value::Object(m) = entry {
+                                m.insert("prefix".into(), tera::Value::String(pfx.clone()));
+                            }
+                        }
+                    }
+                }
+            }
+            let _ = node_names;
+        }
+    }
+
     /// launch ファイルを1つ生成する
     /// （nodes: pkg / node_name / namespace? / params を持つ Tera オブジェクト列、
     ///   args: launch 引数。全ノードに同名パラメータとして渡される）
@@ -266,5 +334,22 @@ impl Ros2HumbleAdapter {
                 .map_err(|e| format!("launch ファイルの生成に失敗: {e}"))?,
             protected: false,
         })
+    }
+}
+
+/// RT 優先度 / CPU 割当から launch の prefix（chrt / taskset）を作る
+fn build_rt_prefix(proc: &crate::model::ProcessDef) -> Option<String> {
+    let mut parts = Vec::new();
+    if let Some(priority) = proc.priority {
+        parts.push(format!("chrt -f {priority}"));
+    }
+    if !proc.cpu_affinity.is_empty() {
+        let cpus: Vec<String> = proc.cpu_affinity.iter().map(|c| c.to_string()).collect();
+        parts.push(format!("taskset -c {}", cpus.join(",")));
+    }
+    if parts.is_empty() {
+        None
+    } else {
+        Some(parts.join(" "))
     }
 }

@@ -11,7 +11,7 @@ class {{ node.class_base }}(MockNode):
     """{{ node.label }} のインターフェース部（自動生成）"""
 
     def __init__(self, bus: Bus) -> None:
-        super().__init__("{{ node.node_name }}", {{ node.period_ms }}, bus)
+        super().__init__("{{ node.node_name }}", {{ node.period_ms }}, bus, {{ node.offset_ms }})
 {% for p in node.params %}        self.{{ p.name }} = {{ p.py_default }}  # パラメータ
 {% endfor %}{% for i in node.inputs %}        self.{{ i.name }}: {{ i.py_type }} | None = None
         bus.subscribe("{{ i.topic }}", self._handle_{{ i.name }})

@@ -18,7 +18,9 @@ fn on_update(_io: &{{ node.struct_name }}) {
 fn main() -> Result<(), rclrs::RclrsError> {
     let mut executor = rclrs::Context::default_from_env()?.create_basic_executor();
     let io = {{ node.struct_name }}::new(&executor)?;
-    let _timer = io.start(on_update)?;
+{% if node.offset_ms > 0 %}    // 位相オフセット: {{ node.offset_ms }} ms
+    std::thread::sleep(std::time::Duration::from_millis({{ node.offset_ms }}));
+{% endif %}    let _timer = io.start(on_update)?;
     executor.spin(rclrs::SpinOptions::default());
     Ok(())
 }

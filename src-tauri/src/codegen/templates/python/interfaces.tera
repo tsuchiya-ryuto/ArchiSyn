@@ -22,8 +22,10 @@ class {{ node.class_base }}(Node):
 {% endfor %}{% for o in node.outputs %}        self._{{ o.name }}_pub = self.create_publisher(
             {{ o.msg_class }}, "{{ o.topic }}", 10
         )
-{% endfor %}        self._timer = self.create_timer({{ node.period_s }}, self.on_update)
-{% for p in node.params %}
+{% endfor %}{% if node.offset_ms > 0 %}        # 位相オフセット: {{ node.offset_ms }} ms 後に周期実行を開始
+        self._offset_timer = self.create_timer({{ node.offset_s }}, self._start_periodic)
+{% else %}        self._timer = self.create_timer({{ node.period_s }}, self.on_update)
+{% endif %}{% for p in node.params %}
     @property
     def {{ p.name }}(self) -> {{ p.py_type }}:
         return self.get_parameter("{{ p.name }}").value
@@ -38,6 +40,10 @@ class {{ node.class_base }}(Node):
     def publish_{{ o.name }}(self, msg: {{ o.msg_class }}) -> None:
         self._{{ o.name }}_pub.publish(msg)
 {% endfor %}
-    def on_update(self) -> None:
+{% if node.offset_ms > 0 %}    def _start_periodic(self) -> None:
+        self._offset_timer.cancel()
+        self._timer = self.create_timer({{ node.period_s }}, self.on_update)
+
+{% endif %}    def on_update(self) -> None:
         """周期処理（{{ node.period_ms }} ms ごと。実装部でオーバーライドしてください）"""
         raise NotImplementedError

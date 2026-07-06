@@ -85,6 +85,7 @@ impl LanguageGenerator for RustGenerator {
             node_ctx.insert("node_name".into(), Value::String(node_name.clone()));
             node_ctx.insert("struct_name".into(), Value::String(struct_name));
             node_ctx.insert("period_ms".into(), Value::from(node.period_ms));
+            node_ctx.insert("offset_ms".into(), Value::from(node.offset_ms));
             node_ctx.insert("inputs".into(), Value::Array(inputs));
             node_ctx.insert("outputs".into(), Value::Array(outputs));
             node_ctx.insert("params".into(), Value::Array(params));

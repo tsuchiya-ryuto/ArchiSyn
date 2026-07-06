@@ -156,6 +156,10 @@ pub fn templates() -> &'static Tera {
                 include_str!("templates/python/setup_cfg.tera"),
             ),
             (
+                "python/process_runner.tera",
+                include_str!("templates/python/process_runner.tera"),
+            ),
+            (
                 "python/interfaces.tera",
                 include_str!("templates/python/interfaces.tera"),
             ),

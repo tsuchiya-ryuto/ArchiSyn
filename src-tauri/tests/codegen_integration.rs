@@ -448,3 +448,77 @@ fn launch_args_and_configs_generate_multiple_launch_files() {
     assert!(sensors.contains("executable=\"sensor_fusion\""));
     assert!(!sensors.contains("executable=\"controller\""));
 }
+
+#[test]
+fn scheduling_generates_process_runner_offset_and_rt_prefix() {
+    let mut project = demo_project();
+    // demo は n1(SensorFusion), n2(Controller) とも Python
+    project.nodes[0].offset_ms = 10;
+    project.scheduling = SchedulingSettings {
+        processes: vec![ProcessDef {
+            name: "control".to_string(),
+            executor: ExecutorKind::Single,
+            threads: None,
+            priority: Some(80),
+            cpu_affinity: vec![2, 3],
+            nodes: vec!["n1".to_string(), "n2".to_string()],
+        }],
+    };
+
+    let ws = generate_workspace(&project).unwrap();
+
+    // オフセット: ワンショット → 周期タイマ
+    let interfaces = content_of(
+        &ws.files,
+        "src/demo_robot_py_nodes/demo_robot_py_nodes/sensor_fusion/interfaces.py",
+    );
+    assert!(
+        interfaces.contains("self._offset_timer = self.create_timer(0.01, self._start_periodic)")
+    );
+
+    // プロセス runner（両クラスを 1 executor で実行）
+    let runner = content_of(
+        &ws.files,
+        "src/demo_robot_py_nodes/demo_robot_py_nodes/process_control.py",
+    );
+    assert!(runner.contains("SingleThreadedExecutor"));
+    assert!(runner.contains("SensorFusion()"));
+    assert!(runner.contains("Controller()"));
+
+    // setup.py にエントリポイント
+    let setup = content_of(&ws.files, "src/demo_robot_py_nodes/setup.py");
+    assert!(setup.contains("process_control = "));
+
+    // launch: 統合起動 + RT prefix、個別エントリと name= は消える
+    let launch = content_of(&ws.files, "launch/system.launch.py");
+    assert!(launch.contains("executable=\"process_control\""));
+    assert!(launch.contains("prefix=\"chrt -f 80 taskset -c 2,3\""));
+    assert!(!launch.contains("executable=\"sensor_fusion\""));
+    assert!(!launch.contains("name=\"process_control\""));
+    // パラメータは既定値使用の注意
+    assert!(ws.warnings.iter().any(|w| w.contains("既定値")));
+}
+
+#[test]
+fn scheduling_mixed_language_process_keeps_individual_launch() {
+    let mut project = demo_project();
+    project.nodes[1].language = Language::Cpp;
+    project.scheduling = SchedulingSettings {
+        processes: vec![ProcessDef {
+            name: "mixed".to_string(),
+            executor: ExecutorKind::Single,
+            threads: None,
+            priority: Some(50),
+            cpu_affinity: vec![],
+            nodes: vec!["n1".to_string(), "n2".to_string()],
+        }],
+    };
+
+    let ws = generate_workspace(&project).unwrap();
+    assert!(ws.warnings.iter().any(|w| w.contains("統合されません")));
+    let launch = content_of(&ws.files, "launch/system.launch.py");
+    // 個別起動のまま prefix が付く
+    assert!(launch.contains("executable=\"sensor_fusion\""));
+    assert!(launch.contains("executable=\"controller\""));
+    assert!(launch.contains("prefix=\"chrt -f 50\""));
+}

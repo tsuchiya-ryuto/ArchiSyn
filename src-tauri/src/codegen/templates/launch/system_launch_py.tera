@@ -13,8 +13,9 @@ def generate_launch_description() -> LaunchDescription:
 {% endfor %}{% for n in nodes %}            Node(
                 package="{{ n.pkg }}",
                 executable="{{ n.node_name }}",
-                name="{{ n.node_name }}",
-{% if n.namespace %}                namespace="{{ n.namespace }}",
+{% if not n.no_rename %}                name="{{ n.node_name }}",
+{% endif %}{% if n.namespace %}                namespace="{{ n.namespace }}",
+{% endif %}{% if n.prefix %}                prefix="{{ n.prefix }}",
 {% endif %}{% if n.params or args %}                parameters=[
                     {
 {% for p in n.params %}                        "{{ p.name }}": {{ p.value }},

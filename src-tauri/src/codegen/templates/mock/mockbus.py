@@ -25,9 +25,10 @@ class Bus:
 class MockNode:
     """period_ms ごとに on_update() を呼ぶノード基底"""
 
-    def __init__(self, name: str, period_ms: int, bus: Bus) -> None:
+    def __init__(self, name: str, period_ms: int, bus: Bus, offset_ms: int = 0) -> None:
         self.name = name
         self.period_s = period_ms / 1000.0
+        self.offset_s = offset_ms / 1000.0
         self.bus = bus
         self._stop = threading.Event()
         self._thread = threading.Thread(target=self._loop, name=name, daemon=True)
@@ -42,6 +43,8 @@ class MockNode:
         print(f"[{self.name}] {message}", flush=True)
 
     def _loop(self) -> None:
+        if self.offset_s > 0:
+            time.sleep(self.offset_s)  # 位相オフセット
         while not self._stop.is_set():
             self.on_update()
             time.sleep(self.period_s)
