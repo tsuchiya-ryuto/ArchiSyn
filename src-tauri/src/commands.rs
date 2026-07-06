@@ -96,6 +96,7 @@ mod tests {
                 id: "n1".to_string(),
                 label: "SensorFusion".to_string(),
                 language: Language::Python,
+                namespace: None,
                 period_ms: 50,
                 position: Vec2 { x: 120.0, y: 200.0 },
                 size: None,

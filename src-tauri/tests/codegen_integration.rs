@@ -31,6 +31,7 @@ fn demo_project() -> Project {
                 id: "n1".to_string(),
                 label: "SensorFusion".to_string(),
                 language: Language::Python,
+                namespace: None,
                 period_ms: 50,
                 position: Vec2 { x: 0.0, y: 0.0 },
                 size: None,
@@ -52,6 +53,7 @@ fn demo_project() -> Project {
                 id: "n2".to_string(),
                 label: "Controller".to_string(),
                 language: Language::Python,
+                namespace: None,
                 period_ms: 100,
                 position: Vec2 { x: 300.0, y: 0.0 },
                 size: None,
@@ -135,12 +137,12 @@ fn interface_wires_topics_via_edges() {
 
     // 出力: 自ノード名/ポート名 のトピックへ publish
     assert!(fusion.contains(
-        "create_publisher(\n            FusedPose, \"sensor_fusion/fused\", 10\n        )"
+        "create_publisher(\n            FusedPose, \"/sensor_fusion/fused\", 10\n        )"
     ));
     // 入力: エッジで接続された接続元のトピックを subscribe
-    assert!(controller.contains("FusedPose, \"sensor_fusion/fused\", self._handle_pose, 10"));
+    assert!(controller.contains("FusedPose, \"/sensor_fusion/fused\", self._handle_pose, 10"));
     // 未接続入力はフォールバックトピック
-    assert!(fusion.contains("Imu, \"sensor_fusion/imu\", self._handle_imu, 10"));
+    assert!(fusion.contains("Imu, \"/sensor_fusion/imu\", self._handle_imu, 10"));
     // パラメータと周期
     assert!(fusion.contains("declare_parameter(\"alpha\", 0.7)"));
     assert!(fusion.contains("create_timer(0.05, self.on_update)"));
@@ -235,7 +237,7 @@ fn mixed_language_workspace_generates_cpp_package() {
     );
     assert!(hpp.contains("#include <demo_robot_msgs/msg/fused_pose.hpp>"));
     assert!(hpp.contains("create_subscription<demo_robot_msgs::msg::FusedPose>"));
-    assert!(hpp.contains("\"sensor_fusion/fused\""));
+    assert!(hpp.contains("\"/sensor_fusion/fused\""));
     assert!(hpp.contains("std::chrono::milliseconds(100)"));
 
     let cpp_impl = ws
@@ -293,7 +295,7 @@ fn rust_nodes_generate_cargo_package() {
         "src/demo_robot_rust_nodes/src/controller/interfaces.rs",
     );
     assert!(interfaces.contains("pub struct ControllerInterfaces"));
-    assert!(interfaces.contains("\"sensor_fusion/fused\""));
+    assert!(interfaces.contains("\"/sensor_fusion/fused\""));
     assert!(interfaces.contains("demo_robot_msgs::msg::FusedPose"));
     assert!(interfaces.contains("Duration::from_millis(100)"));
 
@@ -356,7 +358,7 @@ fn mock_pubsub_generates_runnable_python_workspace() {
 
     // トピック配線はエッジ由来（ROS 版と同じ規約）
     let controller = content_of(&ws.files, "nodes/controller/interfaces.py");
-    assert!(controller.contains("bus.subscribe(\"sensor_fusion/fused\""));
+    assert!(controller.contains("bus.subscribe(\"/sensor_fusion/fused\""));
 
     // 実装部は保護対象
     assert!(
@@ -365,5 +367,35 @@ fn mock_pubsub_generates_runnable_python_workspace() {
             .find(|f| f.rel_path.ends_with("controller/controller.py"))
             .unwrap()
             .protected
+    );
+}
+
+#[test]
+fn launch_includes_namespace_and_parameters() {
+    let mut project = demo_project();
+    project.nodes[0].namespace = Some("front".to_string());
+
+    let ws = generate_workspace(&project).unwrap();
+    let launch = content_of(&ws.files, "launch/system.launch.py");
+    // namespace とパラメータが launch に反映される
+    assert!(launch.contains("namespace=\"front\""), "{launch}");
+    assert!(launch.contains("\"alpha\": 0.7"), "{launch}");
+    // namespace 付きノードのトピックは /ns/node/port になり、
+    // 別 namespace の購読側も接続元の絶対トピックを subscribe する
+    let fusion = content_of(
+        &ws.files,
+        "src/demo_robot_py_nodes/demo_robot_py_nodes/sensor_fusion/interfaces.py",
+    );
+    assert!(
+        fusion.contains("\"/front/sensor_fusion/fused\""),
+        "{fusion}"
+    );
+    let controller = content_of(
+        &ws.files,
+        "src/demo_robot_py_nodes/demo_robot_py_nodes/controller/interfaces.py",
+    );
+    assert!(
+        controller.contains("\"/front/sensor_fusion/fused\""),
+        "{controller}"
     );
 }

@@ -91,35 +91,49 @@ pub fn build_node_names(project: &Project) -> HashMap<String, String> {
 }
 
 /// エッジからトピック名を解決する。
-/// 出力ポートは `<node_name>/<port>` で publish し、
+/// トピックは絶対パス `/<namespace>/<node_name>/<port>` に統一する
+/// （namespace が異なるノード間のエッジでも配線が壊れないようにするため）。
+/// 出力ポートは自ノードのトピックへ publish し、
 /// 接続された入力ポートは接続元のトピックを subscribe する。
 pub struct TopicMap {
+    /// node_id → "/ns/node_name"（ns なしは "/node_name"）
+    prefixes: HashMap<String, String>,
     inputs: HashMap<(String, String), String>,
 }
 
 impl TopicMap {
     pub fn build(project: &Project, node_names: &HashMap<String, String>) -> Self {
+        let mut prefixes = HashMap::new();
+        for node in &project.nodes {
+            let name = &node_names[&node.id];
+            let prefix = match node.namespace.as_deref().map(|ns| ns.trim_matches('/')) {
+                Some(ns) if !ns.is_empty() => format!("/{ns}/{name}"),
+                _ => format!("/{name}"),
+            };
+            prefixes.insert(node.id.clone(), prefix);
+        }
+
         let mut inputs = HashMap::new();
         for edge in &project.edges {
-            if let Some(source_name) = node_names.get(&edge.source.node) {
+            if let Some(source_prefix) = prefixes.get(&edge.source.node) {
                 inputs
                     .entry((edge.target.node.clone(), edge.target.port.clone()))
-                    .or_insert_with(|| format!("{source_name}/{}", edge.source.port));
+                    .or_insert_with(|| format!("{source_prefix}/{}", edge.source.port));
             }
         }
-        Self { inputs }
+        Self { prefixes, inputs }
     }
 
-    pub fn output_topic(&self, node_name: &str, port: &str) -> String {
-        format!("{node_name}/{port}")
+    pub fn output_topic(&self, node_id: &str, port: &str) -> String {
+        format!("{}/{port}", self.prefixes[node_id])
     }
 
-    /// 未接続の入力は自ノード名のトピックにフォールバックする
-    pub fn input_topic(&self, node_id: &str, node_name: &str, port: &str) -> String {
+    /// 未接続の入力は自ノードのトピックにフォールバックする
+    pub fn input_topic(&self, node_id: &str, port: &str) -> String {
         self.inputs
             .get(&(node_id.to_string(), port.to_string()))
             .cloned()
-            .unwrap_or_else(|| format!("{node_name}/{port}"))
+            .unwrap_or_else(|| format!("{}/{port}", self.prefixes[node_id]))
     }
 }
 

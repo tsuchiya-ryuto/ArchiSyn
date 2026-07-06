@@ -11,6 +11,7 @@ export type FileNode = {
   id: string;
   label: string;
   language: Language;
+  namespace?: string;
   period_ms: number;
   position: { x: number; y: number };
   size?: { w: number; h: number };

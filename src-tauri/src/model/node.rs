@@ -8,6 +8,9 @@ pub struct NodeDef {
     pub label: String,
     pub language: Language,
     pub period_ms: u32,
+    /// ROS 名前空間（例: "front"）。未指定はルート
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub namespace: Option<String>,
     pub position: Vec2,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub size: Option<Size>,

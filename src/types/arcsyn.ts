@@ -27,6 +27,8 @@ export type CustomType = {
 export type ArchNodeData = {
   label: string;
   language: Language;
+  /** ROS 名前空間（未指定はルート） */
+  namespace?: string;
   periodMs: number;
   inputs: PortDef[];
   outputs: PortDef[];

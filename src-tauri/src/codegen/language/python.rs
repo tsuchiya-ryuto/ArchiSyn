@@ -53,7 +53,7 @@ impl LanguageGenerator for PythonGenerator {
                 m.insert("msg_class".into(), Value::String(resolved.type_name));
                 m.insert(
                     "topic".into(),
-                    Value::String(ctx.topics.input_topic(&node.id, node_name, &port.name)),
+                    Value::String(ctx.topics.input_topic(&node.id, &port.name)),
                 );
                 inputs.push(Value::Object(m));
             }
@@ -69,7 +69,7 @@ impl LanguageGenerator for PythonGenerator {
                 m.insert("msg_class".into(), Value::String(resolved.type_name));
                 m.insert(
                     "topic".into(),
-                    Value::String(ctx.topics.output_topic(node_name, &port.name)),
+                    Value::String(ctx.topics.output_topic(&node.id, &port.name)),
                 );
                 outputs.push(Value::Object(m));
             }

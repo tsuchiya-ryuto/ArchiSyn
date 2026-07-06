@@ -172,6 +172,18 @@ export function NodeInspector() {
           </select>
         </label>
         <label className="field">
+          <span>名前空間</span>
+          <TextField
+            value={selected.data.namespace ?? ""}
+            placeholder="（なし）例: front"
+            onCommit={(v) =>
+              updateNodeData(selected.id, {
+                namespace: v.trim() === "" ? undefined : v.trim(),
+              })
+            }
+          />
+        </label>
+        <label className="field">
           <span>実行周期 [ms]</span>
           <input
             type="number"

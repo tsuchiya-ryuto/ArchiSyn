@@ -67,9 +67,9 @@ impl MiddlewareAdapter for MockPubSubAdapter {
                         m.insert("name".into(), Value::String(p.name.clone()));
                         m.insert("py_type".into(), Value::String(mock_py_type(&p.ty)));
                         let topic = if input {
-                            topics.input_topic(&node.id, node_name, &p.name)
+                            topics.input_topic(&node.id, &p.name)
                         } else {
-                            topics.output_topic(node_name, &p.name)
+                            topics.output_topic(&node.id, &p.name)
                         };
                         m.insert("topic".into(), Value::String(topic));
                         Value::Object(m)

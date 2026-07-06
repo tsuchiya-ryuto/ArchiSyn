@@ -11,7 +11,13 @@ def generate_launch_description() -> LaunchDescription:
                 package="{{ n.pkg }}",
                 executable="{{ n.node_name }}",
                 name="{{ n.node_name }}",
-                output="screen",
+{% if n.namespace %}                namespace="{{ n.namespace }}",
+{% endif %}{% if n.params %}                parameters=[
+                    {
+{% for p in n.params %}                        "{{ p.name }}": {{ p.value }},
+{% endfor %}                    }
+                ],
+{% endif %}                output="screen",
             ),
 {% endfor %}        ]
     )

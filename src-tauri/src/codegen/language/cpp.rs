@@ -51,7 +51,7 @@ impl LanguageGenerator for CppGenerator {
                 m.insert("cpp_type".into(), Value::String(cpp_type(&resolved)));
                 m.insert(
                     "topic".into(),
-                    Value::String(ctx.topics.input_topic(&node.id, node_name, &port.name)),
+                    Value::String(ctx.topics.input_topic(&node.id, &port.name)),
                 );
                 inputs.push(Value::Object(m));
             }
@@ -64,7 +64,7 @@ impl LanguageGenerator for CppGenerator {
                 m.insert("cpp_type".into(), Value::String(cpp_type(&resolved)));
                 m.insert(
                     "topic".into(),
-                    Value::String(ctx.topics.output_topic(node_name, &port.name)),
+                    Value::String(ctx.topics.output_topic(&node.id, &port.name)),
                 );
                 outputs.push(Value::Object(m));
             }

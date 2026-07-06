@@ -3,6 +3,7 @@ use std::path::PathBuf;
 
 use tera::Context;
 
+use crate::codegen::language::python::python_default;
 use crate::codegen::language::{
     cpp::CppGenerator, python::PythonGenerator, rust::RustGenerator, GenContext, LanguageGenerator,
 };
@@ -52,7 +53,7 @@ impl MiddlewareAdapter for Ros2HumbleAdapter {
             Box::new(CppGenerator),
             Box::new(RustGenerator),
         ];
-        let mut launch_nodes: Vec<(String, String)> = Vec::new(); // (package, node_name)
+        let mut launch_nodes: Vec<tera::Value> = Vec::new();
 
         for generator in &generators {
             let nodes: Vec<_> = project
@@ -66,7 +67,30 @@ impl MiddlewareAdapter for Ros2HumbleAdapter {
             ws.files.extend(generator.generate(&ctx, &nodes)?);
             let pkg = generator.package_name(project);
             for node in &nodes {
-                launch_nodes.push((pkg.clone(), node_names[&node.id].clone()));
+                let params: Vec<tera::Value> = node
+                    .params
+                    .iter()
+                    .map(|p| {
+                        let mut m = tera::Map::new();
+                        m.insert("name".into(), tera::Value::String(p.name.clone()));
+                        // launch は Python なので Python リテラルをそのまま使う
+                        m.insert("value".into(), tera::Value::String(python_default(p)));
+                        tera::Value::Object(m)
+                    })
+                    .collect();
+                let mut m = tera::Map::new();
+                m.insert("pkg".into(), tera::Value::String(pkg.clone()));
+                m.insert(
+                    "node_name".into(),
+                    tera::Value::String(node_names[&node.id].clone()),
+                );
+                if let Some(ns) = node.namespace.as_deref().map(|s| s.trim_matches('/')) {
+                    if !ns.is_empty() {
+                        m.insert("namespace".into(), tera::Value::String(ns.to_string()));
+                    }
+                }
+                m.insert("params".into(), tera::Value::Array(params));
+                launch_nodes.push(tera::Value::Object(m));
             }
         }
 
@@ -181,18 +205,10 @@ impl Ros2HumbleAdapter {
     }
 
     /// 全ノードを起動する launch ファイルを生成する
-    fn launch_files(&self, nodes: &[(String, String)]) -> Result<Vec<GeneratedFile>, String> {
-        let entries: Vec<_> = nodes
-            .iter()
-            .map(|(pkg, name)| {
-                let mut m = tera::Map::new();
-                m.insert("pkg".into(), tera::Value::String(pkg.clone()));
-                m.insert("node_name".into(), tera::Value::String(name.clone()));
-                tera::Value::Object(m)
-            })
-            .collect();
+    /// （nodes: pkg / node_name / namespace? / params を持つ Tera オブジェクト列）
+    fn launch_files(&self, nodes: &[tera::Value]) -> Result<Vec<GeneratedFile>, String> {
         let mut ctx = Context::new();
-        ctx.insert("nodes", &entries);
+        ctx.insert("nodes", nodes);
         Ok(vec![GeneratedFile {
             rel_path: PathBuf::from("launch").join("system.launch.py"),
             content: templates()

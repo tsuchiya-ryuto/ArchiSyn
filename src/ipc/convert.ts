@@ -45,6 +45,7 @@ function toFileNode(node: ArchNode): FileNode {
     id: node.id,
     label: node.data.label,
     language: node.data.language,
+    ...(node.data.namespace ? { namespace: node.data.namespace } : {}),
     period_ms: node.data.periodMs,
     position: {
       x: Math.round(node.position.x),
@@ -78,6 +79,7 @@ export function fromProjectFile(file: ProjectFile): {
     data: {
       label: n.label,
       language: n.language,
+      namespace: n.namespace,
       periodMs: n.period_ms,
       inputs: n.inputs,
       outputs: n.outputs,
