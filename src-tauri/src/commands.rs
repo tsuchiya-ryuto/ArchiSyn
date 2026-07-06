@@ -55,6 +55,28 @@ pub fn list_middlewares() -> Vec<MiddlewareInfo> {
         .collect()
 }
 
+/// グラフダンプ（tools/introspect.py の JSON）のインポート結果
+#[derive(Debug, Serialize)]
+pub struct ImportReport {
+    pub project: Project,
+    pub warnings: Vec<String>,
+}
+
+#[tauri::command]
+pub fn import_graph(path: String) -> Result<ImportReport, String> {
+    let text = std::fs::read_to_string(&path)
+        .map_err(|e| format!("ファイルの読み込みに失敗しました: {e}"))?;
+    let name = std::path::Path::new(&path)
+        .file_stem()
+        .map(|s| s.to_string_lossy().to_string())
+        .unwrap_or_else(|| "imported".to_string());
+    let result = crate::import_graph::import_graph_json(&text, &name)?;
+    Ok(ImportReport {
+        project: result.project,
+        warnings: result.warnings,
+    })
+}
+
 #[tauri::command]
 pub fn generate_code(out_dir: String, project: Project) -> Result<GenerateReport, String> {
     let workspace = crate::codegen::generate_workspace(&project)?;

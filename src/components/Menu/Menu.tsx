@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   generateCodeAction,
+  importGraphAction,
   newProjectAction,
   openProjectAction,
   saveProjectAction,
@@ -53,6 +54,12 @@ export function Menu() {
         <button onClick={() => void saveProjectAction()}>保存</button>
         <button onClick={() => void saveProjectAction(true)}>
           名前を付けて保存
+        </button>
+        <button
+          onClick={() => void importGraphAction()}
+          title="実行中の ROS 2 システムの解析結果（tools/introspect.py の JSON）からプロジェクトを復元"
+        >
+          インポート
         </button>
         <button
           className="generate-button"

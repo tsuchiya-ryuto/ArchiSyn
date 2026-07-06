@@ -1,7 +1,13 @@
 import { ask, message, open, save } from "@tauri-apps/plugin-dialog";
 import { useModelStore } from "../state/store";
 import { toProjectFile } from "./convert";
-import { generateCode, loadProject, newProject, saveProject } from "./project";
+import {
+  generateCode,
+  importGraph,
+  loadProject,
+  newProject,
+  saveProject,
+} from "./project";
 
 const FILE_FILTERS = [
   { name: "ArchiSyn プロジェクト", extensions: ["arcsyn"] },
@@ -58,6 +64,32 @@ export async function openProjectAction() {
     s.setFileStatus(`読み込みました: ${path}`);
   } catch (e) {
     await showError("読み込みに失敗しました", e);
+  }
+}
+
+export async function importGraphAction() {
+  const s = useModelStore.getState();
+  if (!(await confirmDiscard())) return;
+  const path = await open({
+    filters: [{ name: "ArchiSyn グラフダンプ", extensions: ["json"] }],
+    multiple: false,
+    title: "tools/introspect.py が出力した JSON を選択",
+  });
+  if (typeof path !== "string") return;
+  try {
+    const report = await importGraph(path);
+    s.applyProjectFile(report.project, null);
+    s.setFileStatus(
+      `インポートしました: ${report.project.nodes.length} ノード / ${report.project.edges.length} 接続`,
+    );
+    if (report.warnings.length > 0) {
+      await message(report.warnings.map((w) => `⚠ ${w}`).join("\n"), {
+        title: "インポート（確認事項）",
+        kind: "warning",
+      });
+    }
+  } catch (e) {
+    await showError("インポートに失敗しました", e);
   }
 }
 

@@ -47,6 +47,16 @@ export function loadProject(path: string): Promise<ProjectFile> {
   return invoke("load_project", { path });
 }
 
+export type ImportReport = {
+  project: ProjectFile;
+  warnings: string[];
+};
+
+/** tools/introspect.py が出力したグラフ JSON からプロジェクトを復元する */
+export function importGraph(path: string): Promise<ImportReport> {
+  return invoke("import_graph", { path });
+}
+
 export type MiddlewareInfo = {
   name: string;
   description: string;
