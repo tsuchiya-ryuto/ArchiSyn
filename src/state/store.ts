@@ -71,6 +71,8 @@ type ModelState = {
   addCustomType: () => void;
   updateCustomType: (index: number, type: CustomType) => void;
   removeCustomType: (index: number) => void;
+  /** 表貼り付け等による一括登録。同名の既存型はフィールドを置換する */
+  upsertCustomTypes: (types: CustomType[]) => void;
 };
 
 function findPort(
@@ -325,4 +327,18 @@ export const useModelStore = create<ModelState>()((set, get) => ({
     set((s) => ({
       customTypes: s.customTypes.filter((_, i) => i !== index),
     })),
+
+  upsertCustomTypes: (types) =>
+    set((s) => {
+      const next = [...s.customTypes];
+      for (const t of types) {
+        const i = next.findIndex((x) => x.name === t.name);
+        if (i >= 0) {
+          next[i] = t;
+        } else {
+          next.push(t);
+        }
+      }
+      return { customTypes: next };
+    }),
 }));

@@ -266,6 +266,105 @@ button:hover {
   font-weight: 600;
 }
 
+/* ---------- ダイアログ ---------- */
+
+.dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgb(0 0 0 / 35%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.dialog {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 8px 30px rgb(0 0 0 / 25%);
+  padding: 16px;
+  width: 560px;
+  max-width: 90vw;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+.dialog h3 {
+  margin: 0 0 8px;
+}
+
+.dialog-hint {
+  font-size: 12px;
+  color: #667;
+  margin: 0 0 8px;
+}
+
+.paste-area {
+  width: 100%;
+  height: 140px;
+  box-sizing: border-box;
+  font-family: ui-monospace, "SF Mono", Consolas, monospace;
+  font-size: 12px;
+  padding: 8px;
+  border: 1px solid #ccd2dc;
+  border-radius: 4px;
+  resize: vertical;
+  white-space: pre;
+}
+
+.paste-preview {
+  margin-top: 8px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.paste-preview-type {
+  border: 1px solid #d8dce3;
+  border-radius: 6px;
+  padding: 6px 8px;
+  margin-bottom: 6px;
+  font-size: 13px;
+}
+
+.paste-preview-count {
+  margin-left: 8px;
+  color: #667;
+  font-size: 12px;
+}
+
+.paste-preview-fields {
+  color: #445;
+  font-size: 12px;
+  margin-top: 2px;
+}
+
+.paste-warning {
+  color: #a33;
+  font-size: 12px;
+  margin: 2px 0;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.dialog-actions button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.input-invalid {
+  border-color: #c0392b;
+}
+
+.type-editor-actions {
+  display: flex;
+  gap: 4px;
+}
+
 /* ---------- キャンバス ---------- */
 
 .toolbar-button {

@@ -1,10 +1,13 @@
+import { useState } from "react";
 import { useModelStore } from "../../state/store";
 import {
   PRIMITIVE_TYPES,
   ROS_MSG_TYPES,
   type CustomType,
 } from "../../types/arcsyn";
+import { typesToTsv } from "../../utils/tableParse";
 import { TextField } from "../common/TextField";
+import { PasteTableDialog } from "./PasteTableDialog";
 
 const FIELD_TYPES_DATALIST = "field-type-options";
 
@@ -93,12 +96,23 @@ function CustomTypeCard({ index, type }: { index: number; type: CustomType }) {
 export function TypeEditor() {
   const customTypes = useModelStore((s) => s.customTypes);
   const addCustomType = useModelStore((s) => s.addCustomType);
+  const setFileStatus = useModelStore((s) => s.setFileStatus);
+  const [pasteOpen, setPasteOpen] = useState(false);
 
   const fieldTypeOptions = [
     ...PRIMITIVE_TYPES,
     ...ROS_MSG_TYPES,
     ...customTypes.map((t) => t.name),
   ];
+
+  const copyAsTsv = async () => {
+    try {
+      await navigator.clipboard.writeText(typesToTsv(customTypes));
+      setFileStatus(`${customTypes.length} 型を TSV でコピーしました`);
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   return (
     <div className="type-editor">
@@ -110,8 +124,25 @@ export function TypeEditor() {
 
       <div className="inspector-section-header">
         <h3>カスタム型</h3>
-        <button onClick={addCustomType}>+ 型を追加</button>
+        <div className="type-editor-actions">
+          <button
+            onClick={() => setPasteOpen(true)}
+            title="Excel / スプレッドシート / CSV からコピーした表を貼り付けて一括登録"
+          >
+            表から貼り付け
+          </button>
+          {customTypes.length > 0 && (
+            <button
+              onClick={() => void copyAsTsv()}
+              title="全型定義を TSV としてクリップボードへコピー（表計算ソフトに貼り付け可能）"
+            >
+              TSV コピー
+            </button>
+          )}
+          <button onClick={addCustomType}>+ 型を追加</button>
+        </div>
       </div>
+      {pasteOpen && <PasteTableDialog onClose={() => setPasteOpen(false)} />}
       {customTypes.length === 0 && (
         <p className="sidebar-empty">
           カスタム型を追加すると、ポートの型として使えます
