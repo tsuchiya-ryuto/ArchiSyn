@@ -2,13 +2,12 @@ import { useModelStore, type PortDirection } from "../../state/store";
 import {
   LANGUAGES,
   PARAM_TYPES,
-  ROS_MSG_TYPES,
   type Language,
   type ParamDef,
 } from "../../types/arcsyn";
 import { TextField } from "../common/TextField";
+import { TypeSearchField } from "../common/TypeSearchField";
 
-const PORT_TYPES_DATALIST = "port-type-options";
 const PARAM_TYPES_DATALIST = "param-type-options";
 
 function PortListEditor({
@@ -42,12 +41,11 @@ function PortListEditor({
             onCommit={(v) => renamePort(nodeId, dir, p.name, v)}
             placeholder="ポート名"
           />
-          <TextField
+          <TypeSearchField
             className="edit-type"
             value={p.type}
             onCommit={(v) => setPortType(nodeId, dir, p.name, v)}
-            placeholder="型"
-            list={PORT_TYPES_DATALIST}
+            placeholder="型を検索..."
           />
           <button
             className="remove-button"
@@ -129,7 +127,6 @@ function ParamListEditor({ nodeId }: { nodeId: string }) {
 
 export function NodeInspector() {
   const selected = useModelStore((s) => s.nodes.find((n) => n.selected));
-  const customTypes = useModelStore((s) => s.customTypes);
   const updateNodeData = useModelStore((s) => s.updateNodeData);
   const deleteNode = useModelStore((s) => s.deleteNode);
 
@@ -141,15 +138,8 @@ export function NodeInspector() {
     );
   }
 
-  const portTypeOptions = [...ROS_MSG_TYPES, ...customTypes.map((t) => t.name)];
-
   return (
     <div className="inspector">
-      <datalist id={PORT_TYPES_DATALIST}>
-        {portTypeOptions.map((t) => (
-          <option key={t} value={t} />
-        ))}
-      </datalist>
       <datalist id={PARAM_TYPES_DATALIST}>
         {PARAM_TYPES.map((t) => (
           <option key={t} value={t} />

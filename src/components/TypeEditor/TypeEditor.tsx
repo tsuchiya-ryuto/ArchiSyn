@@ -1,15 +1,10 @@
 import { useState } from "react";
 import { useModelStore } from "../../state/store";
-import {
-  PRIMITIVE_TYPES,
-  ROS_MSG_TYPES,
-  type CustomType,
-} from "../../types/arcsyn";
+import { PRIMITIVE_TYPES, type CustomType } from "../../types/arcsyn";
 import { typesToTsv } from "../../utils/tableParse";
 import { TextField } from "../common/TextField";
+import { TypeSearchField } from "../common/TypeSearchField";
 import { PasteTableDialog } from "./PasteTableDialog";
-
-const FIELD_TYPES_DATALIST = "field-type-options";
 
 function CustomTypeCard({ index, type }: { index: number; type: CustomType }) {
   const customTypes = useModelStore((s) => s.customTypes);
@@ -59,7 +54,7 @@ function CustomTypeCard({ index, type }: { index: number; type: CustomType }) {
             }
             placeholder="フィールド名"
           />
-          <TextField
+          <TypeSearchField
             className="edit-type"
             value={f.type}
             onCommit={(v) =>
@@ -67,8 +62,8 @@ function CustomTypeCard({ index, type }: { index: number; type: CustomType }) {
                 type.fields.map((x, j) => (j === i ? { ...x, type: v } : x)),
               )
             }
-            placeholder="型"
-            list={FIELD_TYPES_DATALIST}
+            placeholder="型を検索..."
+            extra={PRIMITIVE_TYPES}
           />
           <button
             className="remove-button"
@@ -99,12 +94,6 @@ export function TypeEditor() {
   const setFileStatus = useModelStore((s) => s.setFileStatus);
   const [pasteOpen, setPasteOpen] = useState(false);
 
-  const fieldTypeOptions = [
-    ...PRIMITIVE_TYPES,
-    ...ROS_MSG_TYPES,
-    ...customTypes.map((t) => t.name),
-  ];
-
   const copyAsTsv = async () => {
     try {
       await navigator.clipboard.writeText(typesToTsv(customTypes));
@@ -116,12 +105,6 @@ export function TypeEditor() {
 
   return (
     <div className="type-editor">
-      <datalist id={FIELD_TYPES_DATALIST}>
-        {fieldTypeOptions.map((t) => (
-          <option key={t} value={t} />
-        ))}
-      </datalist>
-
       <div className="inspector-section-header">
         <h3>カスタム型</h3>
         <div className="type-editor-actions">
