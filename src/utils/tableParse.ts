@@ -156,13 +156,15 @@ export function parseTypeTable(text: string): ParseResult {
   return { types: nonEmpty, fieldsOnly, warnings };
 }
 
-/** 型定義を TSV（型名, フィールド名, 型）へ変換する（表計算ソフトへの逆方向） */
+/** 型定義を TSV（型名, フィールド名, 型）へ変換する（表計算ソフトへの逆方向）。
+ * 型名は全行に明記する（空欄にすると表計算側でソート・フィルタが壊れ、
+ * 「同じ型の連続行がスキップされている」ように見えるため）。 */
 export function typesToTsv(types: CustomType[]): string {
   const rows: string[] = ["型名\tフィールド名\t型"];
   for (const t of types) {
-    t.fields.forEach((f, i) => {
-      rows.push(`${i === 0 ? t.name : ""}\t${f.name}\t${f.type}`);
-    });
+    for (const f of t.fields) {
+      rows.push(`${t.name}\t${f.name}\t${f.type}`);
+    }
   }
   return rows.join("\n");
 }

@@ -96,6 +96,8 @@ describe("typesToTsv", () => {
     ];
     const tsv = typesToTsv(types);
     expect(tsv).toContain("FusedPose\tposition\tgeometry_msgs/Vector3");
+    // 同じ型の連続行でも型名を省略しない（表計算側でのソート・フィルタ対応）
+    expect(tsv).toContain("FusedPose\tconfidence\tfloat64");
     const back = parseTypeTable(tsv);
     expect(back.types).toEqual(types);
     expect(back.warnings).toEqual([]);
