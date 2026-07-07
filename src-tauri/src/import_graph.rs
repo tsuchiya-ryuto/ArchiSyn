@@ -1,5 +1,6 @@
-//! 実行中システムのグラフダンプ（tools/introspect.py の JSON）から
-//! .arcsyn プロジェクトを復元する（Phase 5.3 段階1: rqt_graph 方式）。
+//! 既存システムから .arcsyn プロジェクトを復元する（Phase 5.3）。
+//! - 段階1: 実行中システムのグラフダンプ JSON（tools/introspect.py, rqt_graph 方式）
+//! - 段階2/3: ソースコードの静的解析（src/import_scan.rs が同じ中間表現を組み立てる）
 
 use std::collections::{BTreeMap, HashMap};
 
@@ -17,32 +18,39 @@ struct GraphDump {
     nodes: Vec<DumpNode>,
 }
 
-#[derive(Debug, Deserialize)]
-struct DumpNode {
-    name: String,
+/// インポートの中間表現。JSON でも静的解析でもこの形に落としてから Project 化する。
+#[derive(Debug, Default, Deserialize)]
+pub(crate) struct DumpNode {
+    pub name: String,
     #[serde(default)]
-    namespace: String,
+    pub namespace: String,
     #[serde(default)]
-    publishers: Vec<DumpPort>,
+    pub publishers: Vec<DumpPort>,
     #[serde(default)]
-    subscriptions: Vec<DumpPort>,
+    pub subscriptions: Vec<DumpPort>,
     #[serde(default)]
-    parameters: Vec<DumpParam>,
+    pub parameters: Vec<DumpParam>,
+    /// 実行周期 [ms]（静的解析で取得できた場合のみ。JSON からは取れない）
+    #[serde(default)]
+    pub period_ms: Option<u32>,
+    /// 言語（静的解析で判明した場合のみ。JSON からは取れない）
+    #[serde(default, skip)]
+    pub language: Option<Language>,
 }
 
 #[derive(Debug, Deserialize)]
-struct DumpPort {
-    topic: String,
+pub(crate) struct DumpPort {
+    pub topic: String,
     #[serde(rename = "type")]
-    ty: String,
+    pub ty: String,
 }
 
 #[derive(Debug, Deserialize)]
-struct DumpParam {
-    name: String,
+pub(crate) struct DumpParam {
+    pub name: String,
     #[serde(rename = "type")]
-    ty: String,
-    value: serde_json::Value,
+    pub ty: String,
+    pub value: serde_json::Value,
 }
 
 #[derive(Debug)]
@@ -96,18 +104,28 @@ pub fn import_graph_json(text: &str, project_name: &str) -> Result<ImportResult,
                 .to_string(),
         );
     }
+    build_project(dump.nodes, project_name)
+}
 
-    let mut warnings = vec![
-        "言語は取得できないため全ノードを python に仮設定しました".to_string(),
-        "実行周期は取得できないため 100 ms に仮設定しました".to_string(),
-    ];
+/// 中間ノード列から Project を組み立てる（JSON・静的解析の共通経路）
+pub(crate) fn build_project(
+    dump_nodes: Vec<DumpNode>,
+    project_name: &str,
+) -> Result<ImportResult, String> {
+    let mut warnings = Vec::new();
+    if dump_nodes.iter().any(|n| n.language.is_none()) {
+        warnings.push("言語が判別できないノードは python に仮設定しました".to_string());
+    }
+    if dump_nodes.iter().any(|n| n.period_ms.is_none()) {
+        warnings.push("実行周期が取得できないノードは 100 ms に仮設定しました".to_string());
+    }
 
     // (topic → 発行者[(node_id, port_name)]) を作りながらノードを変換する
     let mut nodes = Vec::new();
     let mut publishers_by_topic: HashMap<String, Vec<(String, String)>> = HashMap::new();
     let mut sub_ports: Vec<(String, String, String)> = Vec::new(); // (node_id, port, topic)
 
-    for (index, dumped) in dump.nodes.iter().enumerate() {
+    for (index, dumped) in dump_nodes.iter().enumerate() {
         let id = format!("n{}", index + 1);
         let mut used = Vec::new();
         let mut outputs = Vec::new();
@@ -141,9 +159,9 @@ pub fn import_graph_json(text: &str, project_name: &str) -> Result<ImportResult,
         nodes.push(NodeDef {
             id,
             label: pascal_case(&dumped.name),
-            language: Language::Python,
+            language: dumped.language.unwrap_or(Language::Python),
             namespace,
-            period_ms: 100,
+            period_ms: dumped.period_ms.unwrap_or(100),
             offset_ms: 0,
             wcet_ms: None,
             position: Vec2 { x: 0.0, y: 0.0 }, // 後段のレイアウトで確定

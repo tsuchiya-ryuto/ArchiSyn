@@ -4,6 +4,7 @@ import { toProjectFile } from "./convert";
 import {
   generateCode,
   importGraph,
+  importSource,
   loadProject,
   newProject,
   saveProject,
@@ -93,6 +94,31 @@ export async function importGraphAction() {
     }
   } catch (e) {
     await showError("インポートに失敗しました", e);
+  }
+}
+
+export async function importSourceAction() {
+  const s = useModelStore.getState();
+  if (!(await confirmDiscard())) return;
+  const dir = await open({
+    directory: true,
+    title: "ROS 2 パッケージ（Python）のディレクトリを選択",
+  });
+  if (typeof dir !== "string") return;
+  try {
+    const report = await importSource(dir);
+    s.applyProjectFile(report.project, null);
+    s.setFileStatus(
+      `ソースから復元: ${report.project.nodes.length} ノード / ${report.project.edges.length} 接続`,
+    );
+    if (report.warnings.length > 0) {
+      await message(report.warnings.map((w) => `⚠ ${w}`).join("\n"), {
+        title: "ソースインポート（確認事項）",
+        kind: "warning",
+      });
+    }
+  } catch (e) {
+    await showError("ソースの解析に失敗しました", e);
   }
 }
 

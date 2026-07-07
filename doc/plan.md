@@ -301,11 +301,14 @@ Phase 4 までの MVP+多言語+抽象化を土台に、実運用で効く機能
     インポート → 完全復元 → 再生成まで確認。言語不問を実証
   - 制約（インポート時に警告表示）: 言語は python 仮設定、周期は 100ms 仮設定、
     カスタム型は型名参照として取込
-- [ ] 段階2: ArchiSyn 生成物のリバース（interfaces.\* は構造既知のため確実にパース可能）
-- [ ] 段階3: 一般 ROS 2 パッケージの静的解析インポート
-  - `.msg` ファイル → カスタム型（確実・価値大）
-  - create_subscription / create_publisher / create_timer / declare_parameter の抽出
-    （Python: ast、C++/Rust: パターンベースの近似）→ レビュー画面で確認して取込
+- [x] 段階2: ArchiSyn 生成物のリバース（2026-07-07。段階3 の特殊ケースとしてカバー。
+      3ノード Python 生成物 → 静的解析で周期・ポート・型・パラメータ・エッジを完全復元）
+- [x] 段階3: Python ソースの静的解析インポート（2026-07-07）
+  - create_publisher / create_subscription / create_timer / declare_parameter を抽出
+    （括弧対応の引数パーサ + `from pkg.msg import Type [as Alias]` の型解決）
+  - JSON インポートと共通の中間表現（build_project）に流し込み、エッジ復元・自動レイアウト
+  - メニュー「ソース取込」から実行
+  - 残課題: C++/Rust ソース、`.msg` → カスタム型の取込、レビュー画面（将来）
 
 #### 5.4 スケジューリング設計（大規模）
 

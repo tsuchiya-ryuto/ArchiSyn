@@ -2,6 +2,7 @@ pub mod codegen;
 pub mod commands;
 pub mod fs;
 pub mod import_graph;
+pub mod import_scan;
 pub mod model;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -16,6 +17,7 @@ pub fn run() {
             commands::generate_code,
             commands::list_middlewares,
             commands::import_graph,
+            commands::import_source,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -67,6 +67,11 @@ export function importGraph(path: string): Promise<ImportReport> {
   return invoke("import_graph", { path });
 }
 
+/** ROS 2 パッケージの Python ソースを静的解析してプロジェクトを復元する */
+export function importSource(dir: string): Promise<ImportReport> {
+  return invoke("import_source", { dir });
+}
+
 export type MiddlewareInfo = {
   name: string;
   description: string;

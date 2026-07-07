@@ -78,6 +78,20 @@ pub fn import_graph(path: String) -> Result<ImportReport, String> {
 }
 
 #[tauri::command]
+pub fn import_source(dir: String) -> Result<ImportReport, String> {
+    let path = std::path::Path::new(&dir);
+    let name = path
+        .file_name()
+        .map(|s| s.to_string_lossy().to_string())
+        .unwrap_or_else(|| "imported".to_string());
+    let result = crate::import_scan::import_python_dir(path, &name)?;
+    Ok(ImportReport {
+        project: result.project,
+        warnings: result.warnings,
+    })
+}
+
+#[tauri::command]
 pub fn generate_code(out_dir: String, project: Project) -> Result<GenerateReport, String> {
     let workspace = crate::codegen::generate_workspace(&project)?;
     let report =
